@@ -21,7 +21,7 @@ From this directory run `python3 -m http.server 8351 --bind 127.0.0.1`, then ope
 
 ## Collaboration
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and pull request workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the direct clone, edit, and push workflow. Pull requests are optional.
 
 ## GitHub Pages (future publication)
 

@@ -1,14 +1,31 @@
 # Working together
 
-Keep `main` as the reviewed version. For each task:
+We edit directly on `main`. Pull requests are optional.
 
-1. Pull the latest `main` and create a short-lived branch such as `jingyu/update-proposal`.
-2. Edit only the pages needed for the task. Tell teammates before changing shared navigation or `assets/style.css`.
-3. Open `index.html` locally and check the edited pages and links.
-4. Commit and push your branch, then open a pull request describing the change and checks.
-5. Have another teammate review it, then merge into `main`.
+## First time
 
-Agents should work on the assigned branch and task. Review their content and results before merging. Avoid two people or agents editing the same file at the same time.
+```sh
+git clone https://github.com/juliusl-code/eecs351-speech-denoising.git
+cd eecs351-speech-denoising
+```
+
+You need collaborator access to this private repository and your own GitHub authentication.
+
+## Each editing session
+
+1. Start with `git pull --ff-only` before editing.
+2. Tell teammates which page you are working on. Avoid editing the same file simultaneously, especially shared navigation and `assets/style.css`.
+3. Edit the files yourself or with an agent. Open `index.html` locally to check the pages and links.
+4. Review `git diff`, then stage the files you changed and commit:
+
+```sh
+git add index.html  # replace with the files you changed
+git commit -m "Describe your update"
+git pull --rebase
+git push origin main
+```
+
+If Git reports a conflict, resolve it with your teammate or agent and review the merged content before pushing. Never force-push over teammates' changes. If a push is rejected because someone pushed first, pull with rebase again and retry.
 
 ## Content conventions
 
