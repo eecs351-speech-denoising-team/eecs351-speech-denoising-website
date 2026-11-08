@@ -23,4 +23,8 @@ Open `index.html` in a browser. Edit the HTML files directly and refresh to see 
 
 ## Hosting
 
-This repository is private. GitHub Pages is not enabled. The static files are ready for future GitHub Pages hosting.
+This repository is private. GitHub Pages publishes the website publicly from `main / (root)`.
+
+Website: https://juliusl-code.github.io/eecs351-speech-denoising-website/
+
+Report: https://juliusl-code.github.io/eecs351-speech-denoising-website/proposal.html
