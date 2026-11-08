@@ -19,10 +19,6 @@ Edit the HTML text directly. Keep future experiments in planned tense until resu
 
 From this directory run `python3 -m http.server 8351 --bind 127.0.0.1`, then open http://127.0.0.1:8351.
 
-## Collaboration
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the direct clone, edit, and push workflow. Pull requests are optional.
-
 ## GitHub Pages (future publication)
 
 Upload the contents of this folder to a dedicated repository. This site uses relative links and works under a repository subpath. In the repository Pages settings, select deployment from the main branch and the root folder. `.nojekyll` is included for plain static hosting. The repository is intended to remain private. GitHub Pages is not enabled; publishing requires a separate decision.
