@@ -23,8 +23,8 @@ Open `index.html` in a browser. Edit the HTML files directly and refresh to see 
 
 ## Hosting
 
-This repository is public and owned by the eecs351-speech-team organization. GitHub Pages publishes the website publicly from `main / (root)`.
+This repository is public and owned by the eecs351-speech-denoising-team organization. GitHub Pages publishes the website publicly from `main / (root)`.
 
-Website: https://eecs351-speech-team.github.io/eecs351-speech-denoising-website/
+Website: https://eecs351-speech-denoising-team.github.io/eecs351-speech-denoising-website/
 
-Report: https://eecs351-speech-team.github.io/eecs351-speech-denoising-website/proposal.html
+Report: https://eecs351-speech-denoising-team.github.io/eecs351-speech-denoising-website/proposal.html
