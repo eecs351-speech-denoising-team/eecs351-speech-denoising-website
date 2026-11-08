@@ -1,26 +1,23 @@
 # EECS 351 — Speech Denoising
 
-A simple, buildless website prepared for GitHub Pages. No framework, packages, or external fonts are required.
+Speech Denoising Using Time–Frequency Filtering  
+University of Michigan · Fall 2026
 
-## Pages
+Members: Dayong Fang, Leyu Jiang, Jingyu Liu, Siqi Gong.
 
-- `index.html`: project overview and report entry
-- `proposal.html`: initial Project Topic Finalized report
-- `methods.html`: title only; content pending
-- `results.html`: title only; content pending
-- `reflection.html`: retained locally, removed from navigation
-- `team.html`: retained locally, removed from navigation
-- `references.html`: references for the selected speech project
-- `assets/style.css`: shared responsive styling
+## Website
 
-Edit the HTML text directly. Keep future experiments in planned tense until results exist. The sample counts are proposed targets, not verified sampling results. The instructor's original feedback was not supplied separately; this website does not independently establish that every requested deliverable is complete.
+- `index.html` — project overview and report link
+- `proposal.html` — initial Project Topic Finalized report
+- `methods.html` — Technical Details; currently title only
+- `results.html` — Results; currently title only
+- `references.html` — project references
+- `assets/style.css` — shared styling
 
-## Preview
+## Preview and editing
 
-From this directory run `python3 -m http.server 8351 --bind 127.0.0.1`, then open http://127.0.0.1:8351.
+Open `index.html` in a browser. Edit the HTML files directly and refresh to see changes. No installation or build step is needed.
 
-## GitHub Pages (future publication)
+## Hosting
 
-Upload the contents of this folder to a dedicated repository. This site uses relative links and works under a repository subpath. In the repository Pages settings, select deployment from the main branch and the root folder. `.nojekyll` is included for plain static hosting. The repository is intended to remain private. GitHub Pages is not enabled; publishing requires a separate decision.
-
-Do not upload the entire EECS 351 coursework folder or audio datasets as part of the website.
+This repository is private. GitHub Pages is not enabled. The static files are ready for future GitHub Pages hosting.
