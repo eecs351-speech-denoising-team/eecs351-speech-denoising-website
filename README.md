@@ -8,7 +8,7 @@ Members: Dayong Fang, Leyu Jiang, Jingyu Liu, Siqi Gong.
 ## Website
 
 - `index.html` — project overview and report link
-- `proposal.html` — revised Project Topic Finalized report with initial analysis
+- `proposal.html` — Project Proposal and Initial Analysis report
 - `methods.html` — Technical Details; currently title only
 - `results.html` — Results; currently title only
 - `references.html` — project references
