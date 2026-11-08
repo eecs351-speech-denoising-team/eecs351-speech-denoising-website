@@ -8,11 +8,13 @@ Members: Dayong Fang, Leyu Jiang, Jingyu Liu, Siqi Gong.
 ## Website
 
 - `index.html` — project overview and report link
-- `proposal.html` — initial Project Topic Finalized report
+- `proposal.html` — revised Project Topic Finalized report with initial analysis
 - `methods.html` — Technical Details; currently title only
 - `results.html` — Results; currently title only
 - `references.html` — project references
 - `assets/style.css` — shared styling
+- `assets/figures/` — three original analysis figures extracted from the supplied report
+- `reports/project_topic_finalized_revised.pdf` — full supplied report, including MATLAB appendix
 
 ## Preview and editing
 
