@@ -8,13 +8,13 @@ Members: Dayong Fang, Leyu Jiang, Jingyu Liu, Siqi Gong.
 ## Website
 
 - `index.html` — project overview and report link
-- `proposal.html` — report text, equations, tables, and figures corresponding to the supplied PDF
-- `methods.html` — Technical Details; currently title only
-- `results.html` — Results; currently title only
+- `proposal.html` — report text, equations, tables, and figures corresponding to the report PDF
+- `methods.html` — Technical Details; reserved for future content; hidden from navigation
+- `results.html` — Results; reserved for future content; hidden from navigation
 - `references.html` — project references
 - `assets/style.css` — shared styling
-- `assets/figures/` — three original analysis figures extracted from the supplied report
-- `reports/project_topic_finalized_revised.pdf` — full supplied report, including MATLAB appendix
+- `assets/figures/` — three initial analysis figures
+- `reports/project_topic_finalized_revised.pdf` — project report, including MATLAB appendix
 - `code/analyze_project_revised.m` — downloadable MATLAB script from the PDF appendix
 
 ## Preview and editing

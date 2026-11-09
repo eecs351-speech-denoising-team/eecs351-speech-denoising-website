@@ -87,10 +87,10 @@ for c = 1:numel(examples)
     selection = floor(lo*fs)+1:min(numel(s),floor(hi*fs));
     localRatio = 10*log10(sum(s(selection).^2)/sum(v(selection).^2));
 
-    % Preserve the ORIGINAL published diagnostic for traceability.
+    % Unweighted nonnegative-frequency-bin share below 300 Hz.
     pRaw = sum(abs(V).^2,2);
     oldBinShare = sum(pRaw(f<300))/sum(pRaw);
-    % NEW: Parseval-consistent one-sided spectral power fraction.
+    % Parseval-consistent one-sided spectral power fraction.
     pPower = pRaw;
     pPower(2:end-1) = 2*pPower(2:end-1);
     correctedPowerFraction = sum(pPower(f<300))/sum(pPower);
