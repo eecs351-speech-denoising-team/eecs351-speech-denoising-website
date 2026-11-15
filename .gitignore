@@ -5,4 +5,14 @@ __pycache__/
 *.wav
 *.flac
 *.zip
-data/
+data/*
+!data/README.md
+!data/evaluation_manifest.csv
+!data/tuning_manifest.csv
+!data/exploratory_manifest.csv
+!assets/audio/clean/p257_004.wav
+!assets/audio/clean/p257_009.wav
+!assets/audio/clean/p257_017.wav
+!assets/audio/noisy/p257_004.wav
+!assets/audio/noisy/p257_009.wav
+!assets/audio/noisy/p257_017.wav

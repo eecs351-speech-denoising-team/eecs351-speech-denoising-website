@@ -1,3 +1,39 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="EECS 351 speech denoising project: time–frequency filtering, VoiceBank-DEMAND, and speech quality evaluation."><title>Speech Denoising | EECS 351</title><link rel="stylesheet" href="assets/style.css"></head>
-<body><a class="skip" href="#main">Skip to content</a><header><nav aria-label="Main navigation"><a href="index.html" aria-current="page">Home</a><a href="proposal.html">Proposal</a><a href="references.html">References</a></nav></header><main id="main"><p class="eyebrow">University of Michigan · EECS 351 · Fall 2026</p><h1>Speech Denoising</h1><p class="subtitle">Using Time–Frequency Filtering</p><p class="members">Dayong Fang · Leyu Jiang · Jingyu Liu · Siqi Gong</p><h2>Project overview</h2><p>We study the tradeoff between noise reduction and speech preservation, motivated by noisy lecture recordings and online meetings. We will compare spectral subtraction and Wiener filtering in the short-time Fourier transform (STFT) domain, alongside a conventional FIR baseline and the unprocessed noisy signal.</p><p>Our main question is how noise conditions and suppression strength affect the balance between removing noise and preserving speech.</p><h2>Project report</h2><div class="report-row"><span class="date">November 2026</span><div><a href="proposal.html">Project Proposal and Initial Analysis</a><p class="muted">Dataset, initial spectrogram analysis, methods, and evaluation plan.</p></div></div></main><footer>EECS 351 · University of Michigan · Fall 2026</footer></body></html>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <nav aria-label="Main navigation">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="proposal.html">Proposal</a>
+      <a href="progress.html">Progress Report</a>
+      <a href="references.html">References</a>
+    </nav>
+  </header>
+  <main id="main">
+    <p class="eyebrow">University of Michigan · EECS 351 · Fall 2026</p>
+    <h1>Speech Denoising</h1>
+    <p class="subtitle">Making speech easier to hear in noisy recordings</p>
+    <p class="members">Dayong Fang · Leyu Jiang · Jingyu Liu · Siqi Gong</p>
+    <h2>Project overview</h2>
+    <p>Imagine replaying a lecture or catching up on an online meeting and struggling to hear the speaker over the background. Turning down the noise can also erase quiet sounds that make words distinct. Our project studies how that trade-off changes with the type of noise and the strength of the filter.</p>
+    <p>We plan to compare a simple frequency filter with two methods that adjust which frequencies to suppress over time. We use paired clean and noisy speech so we can check how much of the original voice each method preserves.</p>
+    <h2>Project reports</h2>
+    <div class="report-row">
+      <span class="date">November 2026</span>
+      <div>
+        <a href="progress.html"><strong>Project Progress Report</strong></a>
+        <p class="muted">Data, three new plots, progress and challenges, a three-week plan, and what we learned.</p>
+      </div>
+    </div>
+    <div class="report-row">
+      <span class="date">November 2026</span>
+      <div>
+        <a href="proposal.html">Project Proposal and Initial Analysis</a>
+        <p class="muted">Initial spectrogram analysis, candidate methods, and evaluation design.</p>
+      </div>
+    </div>
+  </main>
+  <footer>EECS 351 · University of Michigan · Fall 2026</footer>
+</body>
+</html>

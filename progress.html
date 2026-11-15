@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="EECS 351 speech denoising progress report: paired speech data, three diagnostics, current progress, and next steps.">
+  <title>Progress Report | Speech Denoising</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/progress.css">
+</head>
+<body class="progress-page">
+  <a class="pr-skip" href="#main-content">Skip to report</a>
+  <header class="pr-header">
+    <nav class="pr-wrap pr-site-nav" aria-label="Site">
+      <a class="pr-brand" href="index.html">Speech Denoising</a>
+      <div class="pr-site-links">
+        <a href="index.html">Home</a>
+        <a href="proposal.html">Proposal</a>
+        <a href="progress.html" aria-current="page">Progress Report</a>
+        <a href="references.html">References</a>
+      </div>
+    </nav>
+  </header>
+  <main id="main-content">
+    <section class="pr-hero" aria-labelledby="report-title">
+      <div class="pr-wrap pr-hero-grid">
+        <div>
+          <p class="pr-kicker">EECS 351 · Fall 2026 · November progress report</p>
+          <h1 id="report-title">How much noise can we remove without losing speech?</h1>
+          <p>A recording of a lecture or online meeting can pick up sounds that make words harder to understand. We are studying how far we can turn down background noise in a single microphone recording before we also start losing parts of the speaker’s voice.</p>
+          <a class="pr-cta" href="#diagnostics">See the three data plots <span aria-hidden="true">↓</span></a>
+        </div>
+        <dl class="pr-hero-data" aria-label="Study at a glance">
+          <div><dt>Noise settings</dt><dd>Bus, office, café</dd></div>
+          <div><dt>Methods to compare</dt><dd>FIR, spectral subtraction, Wiener</dd></div>
+          <div><dt>Current stage</dt><dd>Data diagnostics</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <div class="pr-wrap pr-body">
+      <nav class="pr-toc" aria-label="In this report">
+        <span>In this report</span>
+        <a href="#data">Data</a>
+        <a href="#diagnostics">Three plots</a>
+        <a href="#progress">Progress</a>
+        <a href="#plan">Three-week plan</a>
+        <a href="#learning">What we learned</a>
+      </nav>
+
+      <section class="pr-section" id="data" aria-labelledby="data-title">
+        <p class="pr-kicker">01 / Data</p>
+        <h2 id="data-title">The same words, with and without noise</h2>
+        <p>We use the <a href="https://doi.org/10.7488/ds/2117">VoiceBank–DEMAND paired speech dataset</a>. Each pair contains a clean recording and a noisy version of the same utterance. We match files by name, check sample rate, channel count, and length, and resample both from 48&nbsp;kHz to 16&nbsp;kHz mono using the same antialiasing operation. We preserve their relative levels. The official test archives contain 824 pairs from two speakers.</p>
+        <div class="pr-pair-grid" aria-label="Signals used in the diagnostic figures">
+          <article><span class="pr-signal">s[n]</span><h3>Clean reference</h3><p>The target speech supplied by the dataset.</p></article>
+          <article><span class="pr-signal">y[n]</span><h3>Noisy recording</h3><p>The only input available to the main denoisers.</p></article>
+          <article><span class="pr-signal">v[n] = y[n] − s[n]</span><h3>Diagnostic residual</h3><p>The sample-by-sample difference, used here to examine the background noise.</p></article>
+        </div>
+        <div class="pr-split" aria-label="Fixed experimental data splits">
+          <article><p class="pr-kicker">Tuning manifest</p><h3>400 pairs</h3><p>Ten pairs for each training noise/SNR combination, drawn from ten noise labels at nominal input SNRs of 0, 5, 10, and 15&nbsp;dB.</p></article>
+          <article><p class="pr-kicker">Held-out evaluation manifest</p><h3>240 pairs</h3><p>Twenty pairs for each of 12 bus, office, or café and SNR combinations (2.5, 7.5, 12.5, or 17.5&nbsp;dB), evenly split between two speakers.</p></article>
+        </div>
+        <p class="pr-note">The three examples below are outside the fixed evaluation set: bus <code>p257_004</code>, office <code>p257_017</code>, and café <code>p257_009</code>, each labeled 2.5&nbsp;dB nominal SNR. They illustrate the signals; they do not measure denoising performance or represent all recordings in each environment.</p>
+        <h3 class="pr-listen-title">Listen to the original pairs</h3>
+        <p>Each pair contains the same utterance with and without background noise. The clean track is the dataset reference; it is not the output of one of our denoisers.</p>
+        <div class="pr-audio-grid">
+          <article>
+            <h4>Bus <span>3.63 s</span></h4>
+            <p>Noisy recording</p><audio controls preload="none" src="assets/audio/noisy/p257_004.wav" aria-label="Bus example, noisy recording"></audio>
+            <p>Clean reference</p><audio controls preload="none" src="assets/audio/clean/p257_004.wav" aria-label="Bus example, clean reference"></audio>
+          </article>
+          <article>
+            <h4>Office <span>2.87 s</span></h4>
+            <p>Noisy recording</p><audio controls preload="none" src="assets/audio/noisy/p257_017.wav" aria-label="Office example, noisy recording"></audio>
+            <p>Clean reference</p><audio controls preload="none" src="assets/audio/clean/p257_017.wav" aria-label="Office example, clean reference"></audio>
+          </article>
+          <article>
+            <h4>Café <span>3.45 s</span></h4>
+            <p>Noisy recording</p><audio controls preload="none" src="assets/audio/noisy/p257_009.wav" aria-label="Café example, noisy recording"></audio>
+            <p>Clean reference</p><audio controls preload="none" src="assets/audio/clean/p257_009.wav" aria-label="Café example, clean reference"></audio>
+          </article>
+        </div>
+        <p class="pr-credit">Audio: Cassia Valentini-Botinhao, <a href="https://doi.org/10.7488/ds/2117">Noisy speech database for training speech enhancement algorithms and TTS models</a>, University of Edinburgh, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. The WAVs are unchanged. Background noise contributions come from <a href="https://doi.org/10.5281/zenodo.1227121">DEMAND</a> (Thiemann, Ito, and Vincent; <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>). The figures use resampled and analyzed copies.</p>
+      </section>
+
+      <section class="pr-section" id="diagnostics" aria-labelledby="diagnostics-title">
+        <p class="pr-kicker">02 / Three new plots</p>
+        <h2 id="diagnostics-title">What the paired recordings show</h2>
+        <p>These views use the same three exploratory utterances to ask three new questions: how the signal levels change, where speech and noise overlap in frequency, and whether residual energy stays steady over time.</p>
+        <figure class="pr-figure">
+          <a href="assets/figures/progress/short-time-rms.png"><img src="assets/figures/progress/short-time-rms.png" width="1701" height="1047" alt="Nine plots compare the short-time level of clean speech, noisy mixtures, and residuals for bus, office, and café recordings on a common scale."></a>
+          <figcaption>
+            <h3>Figure 1. What stays loud between words?</h3>
+            <p><strong>How we made it:</strong> For each signal, we measured the root-mean-square level in 25&nbsp;ms frames, advancing 10&nbsp;ms at a time. All panels use the same dBFS scale. Shading marks the longest consecutive run where clean speech has at most one tenth of the residual energy in each frame.</p>
+            <p><strong>What it shows:</strong> The noisy mixture and residual retain measurable energy while the clean reference drops. The shaded intervals are 0.000–0.455&nbsp;s (bus), 0.270–0.595&nbsp;s (office), and 0.000–0.595&nbsp;s (café). These intervals help explain what the noise looks like but cannot be used as pause labels for a denoiser that has only the noisy recording.</p>
+          </figcaption>
+        </figure>
+        <figure class="pr-figure">
+          <a href="assets/figures/progress/spectral-overlap.png"><img src="assets/figures/progress/spectral-overlap.png" width="1723" height="671" alt="Three frequency plots compare the power spectral density of clean speech, noisy mixtures, and residuals. The shaded region extends to 300 hertz."></a>
+          <figcaption>
+            <h3>Figure 2. Where do speech and noise overlap?</h3>
+            <p><strong>How we made it:</strong> We averaged one-sided power spectral density estimates across overlapping 25&nbsp;ms Hann-windowed frames with a 10&nbsp;ms hop and 512-point FFT. The horizontal axis is logarithmic; the vertical axis gives power per hertz relative to full scale. The percentages below use the full one-sided spectrum, including frequencies below the displayed range.</p>
+            <p><strong>What it shows:</strong> About 98%, 99%, and 76% of the measured residual power falls below 300&nbsp;Hz in the bus, office, and café examples, respectively. The same band also contains about 25%, 32%, and 23% of the clean-reference power. A high-pass filter could reduce low-frequency noise while removing part of the voice.</p>
+          </figcaption>
+        </figure>
+        <figure class="pr-figure">
+          <a href="assets/figures/progress/noise-floor-variation.png"><img src="assets/figures/progress/noise-floor-variation.png" width="1700" height="716" alt="Three time plots show how residual power varies across low, middle, and higher frequency bands in each example."></a>
+          <figcaption>
+            <h3>Figure 3. How much does the background change over time?</h3>
+            <p><strong>How we made it:</strong> For each residual STFT frame, we integrated the spectral density in three bands: 0–300, 300–1,000, and 1,000–4,000&nbsp;Hz. We converted band power to decibels relative to full scale and applied an 11-frame running median to show trends.</p>
+            <p><strong>What it shows:</strong> For instance, the 10th-to-90th percentile range of the smoothed 300–1,000&nbsp;Hz power is about 11.5&nbsp;dB for the bus clip. In the café clip, the 1,000–4,000&nbsp;Hz range is about 10.2&nbsp;dB. Variation inside a single recording gives us a reason to test whether pause-based updates improve on a fixed noise estimate.</p>
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="pr-section" id="progress" aria-labelledby="progress-title">
+        <p class="pr-kicker">03 / Progress and challenges</p>
+        <h2 id="progress-title">The comparison is set up</h2>
+        <p>We verified the official test archive and condition logs, matched the clean and noisy recordings, and fixed the tuning and evaluation manifests. Our first analysis used paired spectrograms to identify noise-dominant intervals. The three plots above extend that exploratory analysis. Algorithm tuning, scored denoising comparisons, and listening tests are upcoming.</p>
+        <dl class="pr-challenges">
+          <div><dt>Speech and noise overlap in frequency.</dt><dd>Test a simple FIR filter as a baseline, then compare time-varying gains from spectral subtraction and Wiener filtering. Listen for consonant loss or isolated tones as suppression increases.</dd></div>
+          <div><dt>A pause is not always cleanly identifiable from a noisy recording.</dt><dd>Compare a fixed noise estimate with one updated during pauses detected from the noisy signal alone. Keep the clean reference and residual for analysis and scoring.</dd></div>
+          <div><dt>The speech quality comparison needs consistent inputs.</dt><dd>Compensate FIR delay, score all methods on the same valid samples, and retain the same excerpts and playback gain for listening. Report per-condition results and both speakers separately.</dd></div>
+        </dl>
+      </section>
+
+      <section class="pr-section" id="plan" aria-labelledby="plan-title">
+        <p class="pr-kicker">04 / Three-week plan</p>
+        <h2 id="plan-title">From baselines to a fair comparison</h2>
+        <ol class="pr-plan">
+          <li><span>Week 1</span><h3>Implement and verify the baselines</h3><p>Use the unprocessed recording for comparison, implement the FIR, spectral subtraction and Wiener methods, and verify reconstruction and sample alignment on exploratory clips.</p></li>
+          <li><span>Week 2</span><h3>Tune, then freeze the settings</h3><p>Use the 400-pair tuning manifest to compare filter settings, suppression strengths and noise estimators. Select settings using mean STOI (an intelligibility estimate) and use mean SNR change as a secondary measure.</p></li>
+          <li><span>Week 3</span><h3>Evaluate and document the trade-off</h3><p>Run the frozen methods on the 240 held-out pairs. Summarize SNR and STOI changes by condition, add before-and-after audio with matched playback levels, and document where stronger suppression damages speech.</p></li>
+        </ol>
+        <p class="pr-note">If time permits, test LMS/NLMS separately on a controlled mixture with a correlated noise-only reference. That method has a second input the main dataset does not provide, so its scores would be reported separately.</p>
+      </section>
+
+      <section class="pr-section pr-lesson" id="learning" aria-labelledby="learning-title">
+        <p class="pr-kicker">05 / What we learned</p>
+        <h2 id="learning-title">A noise estimate has a time scale</h2>
+        <p>A whole-recording spectrum shows where noise power tends to sit, but it hides when that power changes. Short-time analysis gives us both frequency and timing. That matters because a single fixed estimate may follow a steady background while missing changes later in an utterance. Our next experiment is to check whether updating the estimate during detected pauses removes more noise without taking out more speech.</p>
+        <p><a href="proposal.html">Read the original project proposal</a> · <a href="references.html">See the project references</a></p>
+      </section>
+    </div>
+  </main>
+  <footer class="pr-footer"><div class="pr-wrap">EECS 351 · University of Michigan · Fall 2026</div></footer>
+</body>
+</html>
