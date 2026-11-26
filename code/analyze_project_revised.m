@@ -1,68 +1,23 @@
 % EECS 351: initial VoiceBank-DEMAND analysis (no denoiser evaluated).
 % MATLAB R2024a + Signal Processing Toolbox.
-% Run this script from its folder with the extracted data/ directory.
+% From the repository root: addpath('code'); analyze_project_revised
+% Run prepare_data.py first. Frozen manifests are read, never regenerated.
 clear; close all; clc;
-root = fileparts(mfilename( 'fullpath'));
-data = fullfile(root, 'data');
-out = fullfile(root, 'figures');
+cfg = project_config;
+out = fullfile(cfg.outputRoot, 'initial_analysis');
 if ~exist(out, 'dir'), mkdir(out); end
-rng(351, 'twister');
-
-% 1. Read official condition logs and validate their three-column layout.
-train = readtable(fullfile(data, 'log_trainset_28spk.txt'), ...
-'FileType','text', 'Delimiter',' ' , 'ReadVariableNames',false);
-test = readtable(fullfile(data, 'log_testset.txt'), ...
-'FileType','text', 'Delimiter',' ' , 'ReadVariableNames',false);
-assert(width(train)==3 && width(test)==3, ...
-'Unexpected log format: inspect the official files/import options. ');
-train.Properties.VariableNames = { 'File','Noise','NominalSNR'};
-test.Properties.VariableNames = train.Properties.VariableNames;
-train.File = string(train.File); train.Noise = string(train.Noise);
-test.File = string(test.File); test.Noise = string(test.Noise);
-assert(isnumeric(train.NominalSNR) && isnumeric(test.NominalSNR), ...
-'NominalSNR must be numerical; inspect the log import. ');
-
-% 2. Select reproducible, condition-balanced manifests.
-examples = ["p257_004","p257_017","p257_009"];
-conditions = ["bus","office","cafe"];
-tuning = train([],:); evaluation = test([],:);
-noises = unique(train.Noise);
-for c = 1:numel(noises)
-    for snr = [0 5 10 15]
-        ix = find(train.Noise==noises(c) & train.NominalSNR==snr);
-        assert(numel(ix)>=10, 'Insufficient tuning examples. ');
-        ix = ix(randperm(numel(ix),10));
-        tuning = [tuning; train(ix,:)]; %#ok<AGROW>
-    end
-end
-for c = 1:numel(conditions)
-    for snr = [2.5 7.5 12.5 17.5]
-        for speaker = ["p232","p257"]
-            ix = find(test.Noise==conditions(c) & ...
-            test.NominalSNR==snr & startsWith(test.File,speaker) & ...
-            ~ismember(test.File,examples));
-            assert(numel(ix)>=10, 'Insufficient evaluation examples. ');
-            ix = ix(randperm(numel(ix),10));
-            evaluation = [evaluation; test(ix,:)]; %#ok<AGROW>
-        end
-    end
-end
-assert(height(tuning)==400 && height(evaluation)==240);
-assert(~any(ismember(evaluation.File,examples)));
-writetable(tuning, fullfile(root, 'tuning_manifest.csv'));
-writetable(evaluation, fullfile(root, 'evaluation_manifest.csv'));
+tuning = cfg.manifests.tuning;
+evaluation = cfg.manifests.evaluation;
+examples = cfg.manifests.exploratory.File;
+conditions = cfg.manifests.exploratory.Noise;
 
 % 3. Extract comparable STFTs from three illustrative test recordings.
-fs = 16000; L = 400; hop = 160; K = 512;
+fs = cfg.fs; L = cfg.windowLength; hop = cfg.hop; K = cfg.nfft;
 w = hann(L, 'periodic');
 summary = struct([]);
 for c = 1:numel(examples)
     name = examples(c);
-    [s,fs0] = audioread(fullfile(data, 'clean_testset_wav',name+'.wav'));
-    [y,fy] = audioread(fullfile(data, 'noisy_testset_wav',name+'.wav'));
-    assert(fs0==48000 && fy==fs0 && isequal(size(s),size(y)));
-    assert(size(s,2)==1, 'Expected mono source files. ');
-    s = resample(s,1,3); y = resample(y,1,3);
+    [s,y] = load_speech_pair(name,'exploratory',cfg);
     v = y-s; % Diagnostic residual only; NEVER a denoiser input.
     starts = 1:hop:(numel(s)-L+1);
     idx = (0:L-1)' + starts;
@@ -142,12 +97,12 @@ for c = 1:numel(examples)
     summary(c).corrected_one_sided_power_fraction_lt300Hz = ...
     correctedPowerFraction;
 end
-fid = fopen(fullfile(root, 'analysis_summary.json'),'w');
+fid = fopen(fullfile(out, 'analysis_summary.json'),'w');
 assert(fid>0, 'Could not write summary JSON. ');
 fprintf(fid,'%s',jsonencode(summary,PrettyPrint=true));
 fclose(fid);
-save(fullfile(root,'analysis_results.mat'), ...
+save(fullfile(out,'analysis_results.mat'), ...
 'summary','tuning','evaluation');
 disp(struct2table(summary));
-fprintf('Saved %d tuning and %d evaluation entries.\n ', ...
+fprintf('Read %d frozen tuning and %d evaluation entries.\n ', ...
 height(tuning),height(evaluation));
