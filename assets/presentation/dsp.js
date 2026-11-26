@@ -39,17 +39,21 @@
     return w;
   }
 
-  // fir1(order, wn, 'high', hamming(order+1), 'scale'): unit gain at Nyquist.
-  function firHighpass(order, wn) {
+  // fir1(order, wn, 'high'|'bandpass', hamming(order+1), 'scale'). Scaling gives
+  // unit gain at Nyquist (high-pass) or at the passband center (band-pass).
+  function firDesign(order, wn, wnUpper) {
     const b = new Float64Array(order + 1), mid = order / 2;
-    let nyquistGain = 0;
+    const lowpass = (c, m) => (m === 0 ? c : Math.sin(Math.PI * c * m) / (Math.PI * m));
+    const center = wnUpper ? Math.PI * (wn + wnUpper) / 2 : Math.PI;
+    let re = 0, im = 0;
     for (let i = 0; i <= order; i++) {
       const m = i - mid;
-      const ideal = m === 0 ? 1 - wn : -Math.sin(Math.PI * wn * m) / (Math.PI * m);
+      const ideal = wnUpper ? lowpass(wnUpper, m) - lowpass(wn, m) : (m === 0 ? 1 : 0) - lowpass(wn, m);
       b[i] = ideal * (0.54 - 0.46 * Math.cos(2 * Math.PI * i / order));
-      nyquistGain += b[i] * (i % 2 ? -1 : 1);
+      re += b[i] * Math.cos(center * i); im -= b[i] * Math.sin(center * i);
     }
-    for (let i = 0; i <= order; i++) b[i] /= nyquistGain;
+    const g = Math.hypot(re, im);
+    for (let i = 0; i <= order; i++) b[i] /= g;
     return b;
   }
 
@@ -102,7 +106,8 @@
     }
     if (method === 'fir') {
       const order = options.order || 128, cutoffHz = options.cutoffHz || 200;
-      const b = firHighpass(order, cutoffHz / (fs / 2)), delay = order / 2;
+      const upper = options.upperCutoffHz ? options.upperCutoffHz / (fs / 2) : 0;
+      const b = firDesign(order, cutoffHz / (fs / 2), upper), delay = order / 2;
       const output = new Float64Array(n);
       for (let i = 0; i < n; i++) {
         const lo = Math.max(0, i + delay - (n - 1)), hi = Math.min(order, i + delay);
@@ -205,7 +210,7 @@
         updateCount, fallbackReason: reason, finalNoisePower: state } } };
   }
 
-  const api = { fft, stft, denoise, firHighpass, magnitudeResponse, hannPeriodic };
+  const api = { fft, stft, denoise, firDesign, magnitudeResponse, hannPeriodic };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DSP = api;
 })(typeof window !== 'undefined' ? window : globalThis);

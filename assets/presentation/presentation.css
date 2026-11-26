@@ -222,6 +222,42 @@ p strong, p b, li b { color: var(--ink); }
 .playhead { position: absolute; top: 0; width: 2px; height: 416px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); pointer-events: none; display: none; }
 .slide-demo .credit { margin-top: 8px; }
 
+/* 8 · Tuning */
+.cols-tune { grid-template-columns: 700px 1fr; gap: 36px; align-items: start; }
+.tune-chart { position: relative; margin: 0; }
+.tune-chart svg { display: block; width: 700px; height: 452px; overflow: visible; }
+.tune-chart .grid { stroke: #e7edf2; stroke-width: 1; }
+.tune-chart .zero { stroke: #9aa8b4; stroke-width: 1.5; }
+.tune-chart .tick { font-size: 13px; fill: var(--faint); font-variant-numeric: tabular-nums; }
+.tune-chart .axis { font-size: 14px; font-weight: 600; fill: var(--soft); }
+.tune-chart .pt { cursor: pointer; outline: none; }
+.tune-chart .hit { fill: transparent; }
+.tune-chart .dot { stroke-width: 2; paint-order: stroke; }
+.tune-chart .dot:not(.is-hollow) { stroke: #fff; stroke-width: 2; }
+.tune-chart .dot.is-hollow { stroke-width: 2.5; }
+.tune-chart .halo { fill: none; stroke: var(--ink); stroke-width: 2.5; }
+.tune-chart .pt:hover .dot, .tune-chart .pt:focus .dot { r: 9; }
+.tune-chart .pt-label { font-size: 14px; font-weight: 650; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; pointer-events: none; }
+.tune-chart .leader { stroke: var(--ink); stroke-width: 1.25; }
+.tune-chart .pt-caption { font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; fill: var(--faint); }
+.tune-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 6px 0 0 74px; font-size: 13.5px; color: var(--soft); }
+.tune-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.tune-legend i { width: 13px; height: 13px; border-radius: 50%; }
+.tune-legend i.hollow { border: 2.5px solid var(--soft); background: #fff; }
+.tune-legend i.ring { border: 2.5px solid var(--ink); background: #fff; width: 17px; height: 17px; }
+.tune-tip { position: absolute; z-index: 2; width: 300px; padding: 10px 13px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 13.5px; line-height: 1.4; pointer-events: none; box-shadow: 0 8px 24px rgba(20, 37, 52, .25); }
+.tune-tip b { display: block; font-size: 14px; }
+.tune-tip span { display: block; color: #c7d5e0; }
+.tune-tip .nums { margin-top: 4px; color: #fff; font-variant-numeric: tabular-nums; }
+.tune-side { display: grid; gap: 18px; }
+.tune-stat { padding: 16px 20px; border-radius: 12px; background: var(--blue-deep); }
+.tune-stat b { display: block; font-size: 34px; font-weight: 650; letter-spacing: -.03em; color: #fff; }
+.tune-stat span { display: block; margin-top: 4px; font-size: 15px; line-height: 1.4; color: #c7d8e6; }
+.tune-points { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.tune-points li { padding-left: 16px; border-left: 3px solid var(--line); font-size: 16.5px; line-height: 1.42; color: var(--soft); }
+.reset { justify-self: start; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 12.5px; font-weight: 600; color: var(--blue); }
+.reset:hover { background: var(--wash); }
+
 /* 9 · Status */
 .cols-status { grid-template-columns: 1.1fr 1fr; }
 .check, .rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }

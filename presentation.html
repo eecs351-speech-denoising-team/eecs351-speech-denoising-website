@@ -118,32 +118,32 @@
     <div class="methods">
       <article>
         <span class="tag">Baseline</span>
-        <h3>FIR high-pass</h3>
+        <h3>FIR filter</h3>
         <p class="eq">ŝ[n] = (h ∗ y)[n]</p>
-        <p>Order-128 Hamming-window filter, 200 Hz cutoff. One fixed frequency response for the whole recording. Delay is compensated so outputs stay sample-aligned.</p>
-        <p class="knob"><b>Knob</b>cutoff frequency</p>
+        <p>Order-128 Hamming-window filter. One fixed frequency response for the whole recording. Delay is compensated so outputs stay sample-aligned.</p>
+        <p class="knob"><b>Frozen after tuning</b>100–7,000 Hz band-pass</p>
       </article>
       <article>
         <span class="tag">Time–frequency</span>
         <h3>Spectral subtraction</h3>
         <p class="eq">|Ŝ|² = max(|Y|² − α·N, β·N)</p>
         <p>Subtract an estimated noise power <i>N</i> from every STFT frame, keep a floor <i>β</i>, and reuse the noisy phase. <i>α</i> sets how hard we subtract.</p>
-        <p class="knob"><b>Knobs</b>subtraction strength α, floor β</p>
+        <p class="knob"><b>Frozen after tuning</b>α = 1, β = 0.01, noise from quietest 10% of frames</p>
       </article>
       <article>
         <span class="tag">Time–frequency</span>
         <h3>Wiener gain</h3>
         <p class="eq">G = max(G<sub>min</sub>, Ŝ² ⁄ (Ŝ² + N))</p>
         <p>Scale each time–frequency bin by its estimated share of speech power. A gain floor limits how far any bin can be turned down.</p>
-        <p class="knob"><b>Knob</b>gain floor G<sub>min</sub></p>
+        <p class="knob"><b>Frozen after tuning</b>G<sub>min</sub> = 0.05, noise from quietest 10% of frames</p>
       </article>
     </div>
     <div class="shared">
       <span><b>STFT</b> 25 ms Hann · 10 ms hop · 512-point FFT · 16 kHz</span>
-      <span><b>Noise estimate N</b> lowest-energy 20% of noisy frames</span>
+      <span><b>Noise estimate N</b> average of the lowest-energy noisy frames</span>
       <span><b>Checked by unit tests</b> reconstruction · FIR alignment · silence · synthetic noise</span>
     </div>
-    <aside class="notes">All three share one MATLAB function, denoise_speech, and only ever see y. FIR is the simple baseline: one frequency response. The two spectral methods compute a different gain for every 10 ms frame and every frequency bin. Parameters shown are untuned candidate defaults.</aside>
+    <aside class="notes">All three share one MATLAB function, denoise_speech, and only ever see y. FIR is the simple baseline: one frequency response. The two spectral methods compute a different gain for every 10 ms frame and every frequency bin. The bottom row of each card is the setting we froze after tuning on the 400 training pairs (next slides).</aside>
   </section>
 
   <!-- 7 · Noise tracking -->
@@ -166,10 +166,30 @@
     <aside class="notes">Walk through the four steps. Stress the experimental design: fixed and updated variants share everything except the update rule. Be upfront about the risk: an energy threshold is not a real voice-activity detector. The demo on the next slide shows exactly which frames get used.</aside>
   </section>
 
-  <!-- 8 · Demo -->
+  <!-- 8 · Tuning -->
+  <section class="slide" data-section="Results so far">
+    <p class="kicker">05 · Tuning on 400 training pairs</p>
+    <h2>Removing more noise did not make speech more intelligible</h2>
+    <div class="cols cols-tune">
+      <figure class="tune-chart" id="tuneChart" aria-label="Scatter plot of 41 tuning candidates: mean SNR change against mean STOI change"></figure>
+      <div class="tune-side">
+        <div class="tune-stat"><b>41 × 400</b><span>candidate settings × training pairs = 16,400 scored outputs. No held-out audio used.</span></div>
+        <ul class="tune-points">
+          <li><b>The trade-off is real.</b> Spectral subtraction at α = 4 raises SNR by 3.6 dB over the noisy input but lowers STOI by 0.011.</li>
+          <li><b>The best STOI gain is tiny:</b> +0.0002 over the noisy input. Classic filters mostly trade noise for distortion.</li>
+          <li><b>Pause updates scored below</b> fixed noise estimates on this training set.</li>
+          <li><b>Cutting at 300 Hz removes speech:</b> SNR drops 2 dB and STOI by 0.014.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="credit">Each point: mean over 400 training pairs. STOI = classic short-time objective intelligibility (pystoi 0.4.1). Selection rule: highest mean STOI, then ΔSNR. Source: <code>reports/tuning_summary.csv</code>.</p>
+    <aside class="notes">This is our first real result. Each dot is one parameter setting, averaged over all 400 training pairs. Right means more noise removed (higher SNR); up means more intelligible. The cloud slopes down: the harder a method suppresses, the higher the SNR and the lower the STOI. That is exactly the trade-off in our title, now measured. The ringed dots are the settings we froze: the gentlest ones. Their STOI gain over doing nothing is about 0.0002, so on training data none of these classic filters meaningfully improves intelligibility. Pause updating also did not help here. These are training numbers; the held-out evaluation comes next.</aside>
+  </section>
+
+  <!-- 9 · Demo -->
   <section class="slide slide-demo" id="demo" data-section="Demo">
     <div class="demo-head">
-      <div><p class="kicker">05 · Live demo</p><h2>Hear the trade-off</h2></div>
+      <div><p class="kicker">06 · Live demo</p><h2>Hear the trade-off</h2></div>
       <p class="demo-hint">Click a spectrogram to play from that point · <kbd>1</kbd> noisy <kbd>2</kbd> output <kbd>3</kbd> clean · <kbd>Space</kbd> play / stop</p>
     </div>
     <div class="demo">
@@ -177,14 +197,14 @@
         <div class="field"><label>Recording</label>
           <div class="seg" id="segClip"><button data-v="bus">Bus</button><button data-v="office">Office</button><button data-v="cafe">Café</button></div></div>
         <div class="field"><label>Method</label>
-          <div class="seg seg-stack" id="segMethod"><button data-v="identity">Unprocessed</button><button data-v="fir">FIR high-pass</button><button data-v="spectral_subtraction">Spectral subtraction</button><button data-v="wiener">Wiener gain</button></div></div>
+          <div class="seg seg-stack" id="segMethod"><button data-v="identity">Unprocessed</button><button data-v="fir">FIR filter</button><button data-v="spectral_subtraction">Spectral subtraction</button><button data-v="wiener">Wiener gain</button></div></div>
         <div id="params" class="params"></div>
         <div class="metrics">
           <div><span>SNR in</span><b id="mIn">–</b></div>
           <div><span>SNR out</span><b id="mOut">–</b></div>
           <div class="delta"><span>Change</span><b id="mDelta">–</b></div>
         </div>
-        <p class="fine">SNR against the clean reference on one exploratory clip. A diagnostic, not an evaluation result: settings are untuned, and SNR is not intelligibility.</p>
+        <p class="fine">SNR against the clean reference on one exploratory clip. Defaults are the frozen training-set settings. A diagnostic, not an evaluation result.</p>
       </div>
       <div class="plots" id="plots">
         <div class="plot-row" data-track="noisy"><button class="track"><i></i>Noisy input</button><div class="plot"><canvas width="1720" height="236"></canvas><span class="hz hz-top">8 kHz</span><span class="hz hz-bot">0</span></div></div>
@@ -195,50 +215,49 @@
         <div class="playhead" id="playhead"></div>
       </div>
     </div>
-    <p class="credit">Runs in the browser: a JavaScript port of <code>code/denoise_speech.m</code> with the same windows, hop, FFT size, and defaults.</p>
-    <aside class="notes">Suggested path (about 2 minutes): 1) Bus, play Noisy then Clean. 2) FIR at 200 Hz: rumble gone, slide the cutoff up to ~800 Hz and the voice gets thin. 3) Spectral subtraction, raise alpha to 3–4: more noise removed, listen for the watery tones; switch to "Gain applied" to show the time-varying mask. 4) Café + FIR: barely helps because the noise overlaps speech. 5) Wiener, toggle Fixed vs Pause-updated and point at the orange frames where the estimate is updated.</aside>
+    <p class="credit">Runs in the browser: a JavaScript port of <code>code/denoise_speech.m</code> with the same windows, hop, and FFT size. Double-click a slider to return it to the frozen value.</p>
+    <aside class="notes">Every method opens at its frozen setting. Suggested path (about 2 minutes): 1) Bus, play Noisy then Clean. 2) FIR: rumble gone; slide the cutoff up to ~800 Hz and the voice gets thin. 3) Spectral subtraction, raise alpha to 3–4: more noise removed, listen for the watery tones; switch to "Gain applied" to show the time-varying mask. 4) Café + FIR: barely helps because the noise overlaps speech. 5) Wiener, toggle Fixed vs Pause-updated and point at the orange frames where the estimate is updated.</aside>
   </section>
 
   <!-- 9 · Status -->
   <section class="slide" data-section="Progress">
-    <p class="kicker">06 · Where we are</p>
-    <h2>The comparison is set up; the scores are next</h2>
+    <p class="kicker">07 · Where we are</p>
+    <h2>Settings are frozen; the held-out test is next</h2>
     <div class="cols cols-status">
       <div>
         <p class="label">Done</p>
         <ul class="check">
           <li><b>Reproducible data setup.</b> One script fetches and CRC-checks the 643 selected pairs; MATLAB validates sample rate, length, and resampling.</li>
           <li><b>Frozen splits.</b> 400 tuning and 240 held-out pairs, balanced by condition and speaker, committed as manifests.</li>
-          <li><b>Three diagnostic analyses</b> of level, spectral overlap, and noise variation over time.</li>
           <li><b>Three denoisers + pause-updated noise tracking</b>, unit-tested, behind one interface.</li>
-          <li><b>Matched-gain audio</b> for the three exploratory clips, plus this interactive demo.</li>
+          <li><b>Training-only tuning, then freeze.</b> 41 predeclared candidates scored on all 400 tuning pairs; winners and provenance recorded.</li>
         </ul>
       </div>
       <div>
         <p class="label">Keeping the comparison fair</p>
         <ul class="rules">
-          <li><b>Same samples for every method</b><span>FIR delay compensated; boundary samples that depend on zero padding are excluded for all methods.</span></li>
+          <li><b>Same samples for every method</b><span>Every output and baseline is scored on samples 65 through N − 64; no extra shifting, gain fitting, or normalization.</span></li>
           <li><b>Same loudness when listening</b><span>One export gain per utterance, never per-method normalization.</span></li>
           <li><b>One pinned metric</b><span>Classic STOI (intelligibility estimate) from the same implementation on every machine; SNR change as a secondary measure.</span></li>
-          <li><b>No peeking</b><span>No held-out scores are computed until settings are frozen.</span></li>
+          <li><b>No peeking</b><span>Tuning never loaded held-out audio. Frozen settings are hash-checked before they are applied.</span></li>
         </ul>
       </div>
     </div>
-    <aside class="notes">Be clear about status: infrastructure and methods are done and tested; we have not yet tuned or scored anything on the held-out set, on purpose. The right column is what makes the eventual numbers trustworthy.</aside>
+    <aside class="notes">Status: data, methods, and tuning are done; settings are frozen. We deliberately have not touched the 240 held-out pairs yet. The right column is what makes the final numbers trustworthy: same samples, same metric, no peeking.</aside>
   </section>
 
   <!-- 10 · Plan -->
   <section class="slide" data-section="Plan">
-    <p class="kicker">07 · What's left</p>
-    <h2>From working baselines to a fair comparison</h2>
+    <p class="kicker">08 · What's left</p>
+    <h2>One evaluation, then the write-up</h2>
     <div class="timeline">
       <article class="is-done"><span class="when">Done</span><h3>Implement and verify</h3><p>Unprocessed reference, FIR, spectral subtraction, Wiener, and pause-updated noise tracking, verified on exploratory clips.</p></article>
-      <article><span class="when">Next</span><h3>Tune, then freeze</h3><p>Sweep cutoff, α, β, gain floor, λ, and pause threshold on the <b>400 tuning pairs</b>. Choose by mean STOI; SNR change is secondary.</p></article>
-      <article><span class="when">Then</span><h3>Evaluate once</h3><p>Run the frozen settings on the <b>240 held-out pairs</b>. Report by noise type, SNR, and speaker; fixed versus pause-updated side by side.</p></article>
-      <article><span class="when">Final report</span><h3>Document the trade-off</h3><p>Before-and-after audio at matched levels, and where stronger suppression starts to damage speech.</p></article>
+      <article class="is-done"><span class="when">Done</span><h3>Tune, then freeze</h3><p>41 candidates on the <b>400 tuning pairs</b>, chosen by mean STOI, then SNR change. Settings frozen and hash-checked.</p></article>
+      <article><span class="when">Next</span><h3>Evaluate once</h3><p>Run the frozen settings on the <b>240 held-out pairs</b>. Report by noise type, SNR, and speaker; fixed versus pause-updated side by side.</p></article>
+      <article><span class="when">Final report</span><h3>Listen and document</h3><p>Listening review of the matched-level exports, and where stronger suppression starts to damage speech.</p></article>
     </div>
     <p class="stretch"><b>If time permits</b> LMS / NLMS adaptive filtering on a controlled mixture with a separate noise reference. It needs a second input our dataset does not provide, so it would be reported separately.</p>
-    <aside class="notes">Three remaining steps: tune on 400, evaluate once on 240, write up with audio. The question we expect to answer: does the pause-updated estimate help, and for which noise types. Mention LMS/NLMS as a stretch goal only.</aside>
+    <aside class="notes">Two steps are done. What remains: run the frozen settings once on the 240 held-out pairs, then listen and write up. The open question: does the training-set picture (tiny STOI change, pause updates not helping) hold on unseen bus, office, and café recordings? Mention LMS/NLMS as a stretch goal only.</aside>
   </section>
 
   <!-- 11 · Close -->
@@ -248,11 +267,11 @@
     <p class="big">A whole-recording spectrum tells us <em>where</em> the noise sits. Short-time analysis also tells us <em>when</em> it changes, and that is what a time–frequency filter can act on.</p>
     <div class="close-grid">
       <div><b>What we'll be able to say</b><span>For bus, office, and café noise: how much each method improves intelligibility, and what it costs the voice.</span></div>
-      <div><b>What we're testing</b><span>Whether updating the noise estimate during pauses removes more noise without removing more speech.</span></div>
+      <div><b>What surprised us</b><span>On training data, extra suppression raised SNR but not intelligibility, and pause updates did not beat a fixed estimate.</span></div>
     </div>
     <p class="thanks">Thank you. Questions?</p>
     <p class="links">eecs351-speech-denoising-team.github.io/eecs351-speech-denoising-website</p>
-    <aside class="notes">Close with the one idea to remember, then invite questions. If asked "which method is best": we do not know yet, and the held-out evaluation is designed to answer that.</aside>
+    <aside class="notes">Close with the one idea to remember, then invite questions. If asked "which method is best": on training data the differences in STOI are tiny; the held-out evaluation decides, per noise type.</aside>
   </section>
 
   <footer class="chrome">
@@ -261,7 +280,7 @@
     <div class="chrome-right">
       <button id="timer" class="timer" title="Start / pause the 10-minute timer (T). Shift-click to reset.">10:00</button>
       <button id="prev" aria-label="Previous slide">‹</button>
-      <span id="counter" class="counter">1 / 11</span>
+      <span id="counter" class="counter">1 / 12</span>
       <button id="next" aria-label="Next slide">›</button>
     </div>
   </footer>
@@ -273,6 +292,7 @@
 </div>
 
 <script src="assets/presentation/clips.js"></script>
+<script src="assets/presentation/tuning.js"></script>
 <script src="assets/presentation/dsp.js"></script>
 <script src="assets/presentation/presentation.js"></script>
 </body>

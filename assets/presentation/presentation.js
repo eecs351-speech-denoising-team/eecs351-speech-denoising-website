@@ -177,10 +177,121 @@
   Player.listeners.push((key) => $$('.play').forEach((btn) =>
     btn.classList.toggle('is-playing', key === 'data:' + btn.dataset.clip + ':' + btn.dataset.track)));
 
+  // ---------- Tuning results ----------
+  const METHOD_COLOR = { wiener: '#2a78d6', spectral_subtraction: '#eb6834', fir: '#1baf7a', identity: '#6b7785' };
+  const METHOD_NAME = { wiener: 'Wiener gain', spectral_subtraction: 'Spectral subtraction', fir: 'FIR filter', identity: 'Noisy input' };
+
+  function describe(c) {
+    const o = c.options;
+    if (c.method === 'identity') return 'Unprocessed noisy input';
+    if (c.method === 'fir') {
+      return Array.isArray(o.upperCutoffHz) || !o.upperCutoffHz ? 'High-pass at ' + o.cutoffHz + ' Hz'
+        : 'Band-pass ' + o.cutoffHz + '–' + o.upperCutoffHz + ' Hz';
+    }
+    const parts = [c.method === 'wiener' ? 'gain floor ' + o.gainFloor : 'α = ' + o.alpha + ', β = ' + o.beta,
+      'noise from quietest ' + Math.round(o.noiseFraction * 100) + '%'];
+    if (o.noiseMode === 'pause_updated') parts.push('pause-updated (λ = ' + o.noiseLambda + ', margin ' + o.pauseThresholdDb + ' dB)');
+    else parts.push('fixed estimate');
+    return parts.join(' · ');
+  }
+
+  function drawTuning() {
+    const fig = $('#tuneChart'), rows = TUNING.candidates;
+    if (!fig || !rows.length) return;
+    const W = 700, H = 452, m = { l: 74, r: 18, t: 46, b: 58 };
+    const frozen = new Set(Object.values(TUNING.primary));
+    const xs = rows.map((r) => r.dSnr), ys = rows.map((r) => r.dStoi * 1000);
+    const x0 = Math.floor(Math.min(...xs)) - 0.5, x1 = Math.ceil(Math.max(...xs)) + 0.5;
+    const y0 = Math.floor(Math.min(...ys) / 5) * 5 - 1, y1 = 8; // headroom for the labels
+    const X = (v) => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r);
+    const Y = (v) => m.t + (y1 - v) / (y1 - y0) * (H - m.t - m.b);
+    const ns = 'http://www.w3.org/2000/svg';
+    const el = (tag, attrs, parent, text) => {
+      const e = document.createElementNS(ns, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      if (text !== undefined) e.textContent = text;
+      (parent || svg).appendChild(e);
+      return e;
+    };
+    fig.innerHTML = '';
+    const svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' }, fig);
+    el('title', {}, svg, 'Mean change in STOI against mean change in SNR for 41 tuning candidates');
+
+    for (let v = Math.ceil(x0); v <= x1; v++) {
+      el('line', { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, class: v === 0 ? 'zero' : 'grid' });
+      el('text', { x: X(v), y: H - m.b + 20, class: 'tick', 'text-anchor': 'middle' }, svg, (v > 0 ? '+' : '') + v);
+    }
+    for (let v = Math.ceil(y0 / 5) * 5; v <= 0; v += 5) {
+      el('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: v === 0 ? 'zero' : 'grid' });
+      el('text', { x: m.l - 10, y: Y(v) + 4, class: 'tick', 'text-anchor': 'end' }, svg, (v > 0 ? '+' : v < 0 ? '−' : '') + (Math.abs(v) / 1000).toFixed(3));
+    }
+    el('text', { x: (m.l + W - m.r) / 2, y: H - 12, class: 'axis', 'text-anchor': 'middle' }, svg, 'Mean SNR change (dB)  →  more noise removed');
+    el('text', { x: 16, y: m.t - 22, class: 'axis' }, svg, '↑ Mean STOI change  (more intelligible)');
+
+    const tip = document.createElement('div');
+    tip.className = 'tune-tip'; tip.hidden = true;
+    fig.appendChild(tip);
+    const order = rows.slice().sort((a, b) => frozen.has(a.id) - frozen.has(b.id));
+    for (const r of order) {
+      const pause = r.options.noiseMode === 'pause_updated', isFrozen = frozen.has(r.id);
+      const g = el('g', { class: 'pt' + (isFrozen ? ' is-frozen' : ''), tabindex: 0 });
+      el('circle', { cx: X(r.dSnr), cy: Y(r.dStoi * 1000), r: 14, class: 'hit' }, g);
+      if (isFrozen) el('circle', { cx: X(r.dSnr), cy: Y(r.dStoi * 1000), r: 11, class: 'halo' }, g);
+      el('circle', { cx: X(r.dSnr), cy: Y(r.dStoi * 1000), r: 6.5,
+        fill: pause ? '#fff' : METHOD_COLOR[r.method], stroke: METHOD_COLOR[r.method], class: 'dot' + (pause ? ' is-hollow' : '') }, g);
+      const show = () => {
+        tip.innerHTML = '<b>' + METHOD_NAME[r.method] + (isFrozen ? ' · frozen' : '') + '</b><span>' + describe(r) + '</span>' +
+          '<span class="nums">ΔSNR ' + (r.dSnr >= 0 ? '+' : '−') + Math.abs(r.dSnr).toFixed(2) + ' dB · ΔSTOI ' +
+          (r.dStoi >= 0 ? '+' : '−') + Math.abs(r.dStoi).toFixed(4) + ' · STOI ' + r.stoi.toFixed(4) + '</span>';
+        tip.hidden = false;
+        const px = X(r.dSnr) / W * fig.clientWidth, py = Y(r.dStoi * 1000) / H * fig.clientHeight;
+        tip.style.left = Math.min(px, fig.clientWidth - 300) + 'px';
+        tip.style.top = (py > fig.clientHeight * 0.55 ? py - tip.offsetHeight - 16 : py + 16) + 'px';
+      };
+      g.addEventListener('mouseenter', show); g.addEventListener('focus', show);
+      g.addEventListener('mouseleave', () => { tip.hidden = true; }); g.addEventListener('blur', () => { tip.hidden = true; });
+    }
+    // Direct labels: frozen picks sit in the headroom above the cluster, with leader lines.
+    const label = (id, text, dx, rowY, anchor) => {
+      const r = rows.find((c) => c.id === id);
+      if (!r) return;
+      const x = X(r.dSnr), y = Y(r.dStoi * 1000);
+      if (rowY !== undefined) {
+        el('line', { x1: x, y1: y - 12, x2: x, y2: rowY + 6, class: 'leader' }, svg).parentNode.insertBefore(svg.lastChild, svg.querySelector('.pt'));
+        el('text', { x: x + dx, y: rowY, class: 'pt-label', 'text-anchor': anchor }, svg, text);
+      } else {
+        el('text', { x: x + dx, y: y + 5, class: 'pt-label', 'text-anchor': anchor }, svg, text);
+      }
+    };
+    label('identity', 'Noisy input', -16, undefined, 'end');
+    label(TUNING.primary.spectral_subtraction, 'Subtraction', 4, m.t + 4, 'end');
+    label(TUNING.primary.wiener, 'Wiener', 0, m.t + 30, 'middle');
+    label(TUNING.primary.fir, 'FIR', -4, m.t + 4, 'start');
+    el('text', { x: X(TUNING.candidates.find((c) => c.id === TUNING.primary.wiener).dSnr), y: m.t - 16, class: 'pt-caption', 'text-anchor': 'middle' }, svg, 'frozen settings');
+
+    const legend = document.createElement('div');
+    legend.className = 'tune-legend';
+    legend.innerHTML = ['fir', 'spectral_subtraction', 'wiener'].map((k) =>
+      '<span><i style="background:' + METHOD_COLOR[k] + '"></i>' + METHOD_NAME[k] + '</span>').join('') +
+      '<span><i class="hollow"></i>Pause-updated noise estimate</span><span><i class="ring"></i>Frozen setting</span>';
+    fig.appendChild(legend);
+  }
+
   // ---------- Demo ----------
-  const DEFAULTS = { cutoffHz: 200, alpha: 1, beta: 0.01, gainFloor: 0.05, noiseMode: 'fixed', noiseLambda: 0.9, pauseThresholdDb: 3 };
+  // Demo defaults are the frozen training-set selections (config/frozen_denoisers.json).
+  const TUNING = window.PRESENTATION_TUNING || { primary: {}, candidates: [] };
+  const frozenOptions = (method) => {
+    const row = TUNING.candidates.find((c) => c.id === TUNING.primary[method]);
+    return row ? row.options : {};
+  };
+  const DEFAULTS = Object.assign(
+    { cutoffHz: 100, upperCutoffHz: 7000, alpha: 1, beta: 0.01, gainFloor: 0.05, noiseFraction: 0.1,
+      noiseMode: 'fixed', noiseLambda: 0.9, pauseThresholdDb: 3 },
+    frozenOptions('fir'), frozenOptions('spectral_subtraction'), frozenOptions('wiener'));
+  if (Array.isArray(DEFAULTS.upperCutoffHz)) DEFAULTS.upperCutoffHz = 0; // MATLAB [] means high-pass
   const SLIDERS = {
-    cutoffHz: { label: 'Cutoff', min: 50, max: 1500, step: 10, fmt: (v) => v + ' Hz' },
+    cutoffHz: { label: 'Lower cutoff', min: 50, max: 1500, step: 10, fmt: (v) => v + ' Hz' },
+    noiseFraction: { label: 'Noise frames used', min: 0.05, max: 0.5, step: 0.05, fmt: (v) => Math.round(v * 100) + '% quietest' },
     alpha: { label: 'Subtraction strength α', min: 0, max: 5, step: 0.1, fmt: (v) => v.toFixed(1) },
     beta: { label: 'Noise floor β', min: 0, max: 0.3, step: 0.005, fmt: (v) => v.toFixed(3) },
     gainFloor: { label: 'Gain floor', min: 0, max: 0.5, step: 0.01, fmt: (v) => v.toFixed(2) },
@@ -239,24 +350,48 @@
         el.innerHTML = '<label>' + s.label + '<output></output></label><input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '">';
         const input = $('input', el), out = $('output', el);
         input.value = this.p[name]; out.textContent = s.fmt(this.p[name]);
-        input.addEventListener('input', () => { this.p[name] = +input.value; out.textContent = s.fmt(this.p[name]); this.update(); });
-        input.addEventListener('dblclick', () => { input.value = this.p[name] = DEFAULTS[name]; out.textContent = s.fmt(DEFAULTS[name]); this.update(); });
+        input.addEventListener('input', () => { this.p[name] = +input.value; out.textContent = s.fmt(this.p[name]); this.update(); this.syncReset(); });
+        input.addEventListener('dblclick', () => { input.value = this.p[name] = DEFAULTS[name]; out.textContent = s.fmt(DEFAULTS[name]); this.update(); this.syncReset(); });
         box.appendChild(el);
       };
       if (m === 'identity') box.innerHTML = '<p class="param-note">The noisy recording, unchanged. This is the reference every method has to beat.</p>';
-      if (m === 'fir') slider('cutoffHz');
+      const choice = (label, name, values) => {
+        const el = document.createElement('div');
+        el.className = 'param';
+        el.innerHTML = '<label>' + label + '</label><div class="seg">' +
+          values.map(([v, text]) => '<button data-v="' + v + '">' + text + '</button>').join('') + '</div>';
+        box.appendChild(el);
+        const buttons = $$('button', el);
+        const paint = () => buttons.forEach((b) => b.classList.toggle('is-on', b.dataset.v === String(this.p[name])));
+        buttons.forEach((b) => b.addEventListener('click', () => {
+          this.p[name] = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v;
+          paint(); this.buildParams(); this.update();
+        }));
+        paint();
+      };
+      if (m === 'fir') { slider('cutoffHz'); choice('Upper cutoff', 'upperCutoffHz', [[7000, '7 kHz'], [0, 'None']]); }
       if (m === 'spectral_subtraction') { slider('alpha'); slider('beta'); }
       if (m === 'wiener') slider('gainFloor');
       if (spectral) {
-        const el = document.createElement('div');
-        el.className = 'param';
-        el.innerHTML = '<label>Noise estimate</label><div class="seg" id="segNoise"><button data-v="fixed">Fixed</button><button data-v="pause_updated">Pause-updated</button></div>';
-        box.appendChild(el);
-        const buttons = $$('button', el);
-        const paint = () => buttons.forEach((b) => b.classList.toggle('is-on', b.dataset.v === this.p.noiseMode));
-        buttons.forEach((b) => b.addEventListener('click', () => { this.p.noiseMode = b.dataset.v; paint(); this.buildParams(); this.update(); }));
-        paint();
+        slider('noiseFraction');
+        choice('Noise estimate', 'noiseMode', [['fixed', 'Fixed'], ['pause_updated', 'Pause-updated']]);
         if (this.p.noiseMode === 'pause_updated') { slider('noiseLambda'); slider('pauseThresholdDb'); }
+      }
+      const changed = Object.keys(DEFAULTS).some((k) => this.p[k] !== DEFAULTS[k]);
+      if (m !== 'identity' && changed) {
+        const reset = document.createElement('button');
+        reset.className = 'reset'; reset.textContent = 'Reset to frozen settings';
+        reset.addEventListener('click', () => { this.p = Object.assign({}, DEFAULTS); this.buildParams(); this.update(); });
+        box.appendChild(reset);
+      }
+    },
+    // Show the reset button once a slider leaves its frozen value (without rebuilding mid-drag).
+    syncReset() {
+      const changed = Object.keys(DEFAULTS).some((k) => this.p[k] !== DEFAULTS[k]);
+      if (changed !== !!$('#params .reset')) {
+        const focused = document.activeElement, inputs = $$('#params input'), i = inputs.indexOf(focused);
+        this.buildParams();
+        if (i >= 0) $$('#params input')[i].focus();
       }
     },
     data() {
@@ -274,9 +409,10 @@
     },
     update() {
       const d = this.data(), p = this.p, m = this.method;
-      const options = m === 'fir' ? { cutoffHz: p.cutoffHz }
-        : m === 'spectral_subtraction' ? { alpha: p.alpha, beta: p.beta, noiseMode: p.noiseMode, noiseLambda: p.noiseLambda, pauseThresholdDb: p.pauseThresholdDb }
-        : m === 'wiener' ? { gainFloor: p.gainFloor, noiseMode: p.noiseMode, noiseLambda: p.noiseLambda, pauseThresholdDb: p.pauseThresholdDb } : {};
+      const noise = { noiseFraction: p.noiseFraction, noiseMode: p.noiseMode, noiseLambda: p.noiseLambda, pauseThresholdDb: p.pauseThresholdDb };
+      const options = m === 'fir' ? { cutoffHz: p.cutoffHz, upperCutoffHz: p.upperCutoffHz }
+        : m === 'spectral_subtraction' ? Object.assign({ alpha: p.alpha, beta: p.beta }, noise)
+        : m === 'wiener' ? Object.assign({ gainFloor: p.gainFloor }, noise) : {};
       const r = DSP.denoise(d.noisy, d.fs, m, options);
       this.out = Float32Array.from(r.output); this.info = r.info;
       this.outSpec = DSP.stft(this.out, d.fs);
@@ -411,7 +547,7 @@
   });
 
   addEventListener('resize', fit);
-  fit(); drawStatic(); Timer.draw();
+  fit(); drawStatic(); drawTuning(); Timer.draw();
   go((parseInt(location.hash.slice(1), 10) || 1) - 1);
   window.Presentation = { go, Demo, Player };
 })();
