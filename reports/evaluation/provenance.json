@@ -1,0 +1,245 @@
+{
+  "protocol": {
+    "schema_version": 1,
+    "split": "evaluation",
+    "pairs": 240,
+    "fs": 16000,
+    "freeze_sha256": "fcf2e03293bb7851f2d62fda18f2824fdf674172e41bbfe37820a2c7a997b58c",
+    "evaluation_manifest_sha256": "aada8896a4eafcd3c459c034d4af1835a408b4eb4bc8884c388c6cada2ce6263",
+    "evaluation_audio_digest": "00ad7c8e4c62c8ba590d0c236cdc6cd6057c9fc643cc0a9a3c1108ed5f5d7e87",
+    "plan_sha256": "67216899d9df11c7b949244539c3eb7253dba9e155b5b3985f18939afc9f3fc7",
+    "source_sha256": {
+      "code/run_evaluation.py": "a0e3541143d4aa6e28226895473ccfaffd5fdc8392deb1d32755b512a13f6fbb",
+      "code/prepare_evaluation.m": "733a771e428399fcddf9fe698e4a60e7bd8e1bd392e42c370a1e531fd42668c9",
+      "code/evaluation_analysis.py": "2b74c1cb35a96d68f199884fdeac65826e530facb6933fce0b66fec4502e9262"
+    },
+    "common_crop_samples_each_end": 64,
+    "created_utc": "2026-11-26T18:59:58.392542+00:00",
+    "signature": "8d4e061c1023a67d16e6d10b2ab10d2d5865fe5ad4ffdb16bb8c55540a321a9c"
+  },
+  "plan": {
+    "schema_version": 1,
+    "freeze_sha256": "fcf2e03293bb7851f2d62fda18f2824fdf674172e41bbfe37820a2c7a997b58c",
+    "variants": [
+      {
+        "id": "identity",
+        "method": "identity",
+        "options": {},
+        "role": "primary"
+      },
+      {
+        "id": "fir_100_7000",
+        "method": "fir",
+        "options": {
+          "order": 128,
+          "cutoffHz": 100,
+          "upperCutoffHz": 7000
+        },
+        "role": "primary"
+      },
+      {
+        "id": "ss_fixed_fraction10",
+        "method": "spectral_subtraction",
+        "options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.1,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 3,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "fixed",
+          "alpha": 1,
+          "beta": 0.01
+        },
+        "role": "primary"
+      },
+      {
+        "id": "ss_pause_updated_pauseThresholdDb0",
+        "method": "spectral_subtraction",
+        "options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.2,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 0,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "pause_updated",
+          "alpha": 1,
+          "beta": 0.01
+        },
+        "role": "independent_noise_mode"
+      },
+      {
+        "id": "wiener_fixed_fraction10",
+        "method": "wiener",
+        "options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.1,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 3,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "fixed",
+          "gainFloor": 0.05
+        },
+        "role": "primary"
+      },
+      {
+        "id": "wiener_pause_updated_pauseThresholdDb0",
+        "method": "wiener",
+        "options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.2,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 0,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "pause_updated",
+          "gainFloor": 0.05
+        },
+        "role": "independent_noise_mode"
+      },
+      {
+        "id": "ss_pause_updated_fraction10",
+        "method": "spectral_subtraction",
+        "options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.1,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 3,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "pause_updated",
+          "alpha": 1,
+          "beta": 0.01
+        },
+        "role": "matched_noise_mode"
+      },
+      {
+        "id": "wiener_pause_updated_fraction10",
+        "method": "wiener",
+        "options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.1,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 3,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "pause_updated",
+          "gainFloor": 0.05
+        },
+        "role": "matched_noise_mode"
+      }
+    ],
+    "primary": {
+      "identity": "identity",
+      "fir": "fir_100_7000",
+      "spectral_subtraction": "ss_fixed_fraction10",
+      "wiener": "wiener_fixed_fraction10"
+    },
+    "matched_noise_mode_pairs": [
+      {
+        "method": "spectral_subtraction",
+        "anchor_candidate": "ss_fixed_fraction10",
+        "counterpart_score_candidate": "ss_pause_updated_fraction10",
+        "counterpart_options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.1,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 3,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "pause_updated",
+          "alpha": 1,
+          "beta": 0.01
+        }
+      },
+      {
+        "method": "wiener",
+        "anchor_candidate": "wiener_fixed_fraction10",
+        "counterpart_score_candidate": "wiener_pause_updated_fraction10",
+        "counterpart_options": {
+          "windowLength": 400,
+          "hop": 160,
+          "nfft": 512,
+          "noiseFraction": 0.1,
+          "noiseLambda": 0.9,
+          "pauseThresholdDb": 3,
+          "minPauseFrames": 3,
+          "minEnergyContrastDb": 3,
+          "storeNoiseHistory": false,
+          "noiseMode": "pause_updated",
+          "gainFloor": 0.05
+        }
+      }
+    ],
+    "listening_selection": "First manifest file per noise and speaker at nominal 2.5 dB: six low-SNR trials",
+    "bootstrap": {
+      "seed": 351,
+      "replicates": 2000,
+      "strata": [
+        "noise",
+        "nominal_snr_db",
+        "speaker"
+      ],
+      "interpretation": "Descriptive file-resampling intervals conditional on these two speakers and conditions"
+    }
+  },
+  "artifacts": {
+    "by_condition.csv": "da561a2cd8bfdf24984fd59f5908653035fc4bd8518270ed362ca4a2e1b3fd94",
+    "overall.csv": "20f7ba537909ddf10109345c7d56541f90275b7577ddb4f16988c4196be2106c",
+    "by_speaker.csv": "9360efb27a88c278edc114912babebcf2d1a141999025f3f2d6dc61e7da7e1f4",
+    "per_file_metrics.csv": "e95ee69aba63b2b26937f7cdaa48c323f533c958f749ecae3a7232c69d1ea252",
+    "noise_mode_comparisons.csv": "0775b9bdb55e30b0f3fec0bdf16d0f3e280fff339f4a7fb346273b182e472b75"
+  },
+  "interpretation": "File-resampling intervals conditional on two speakers; no population-wide speaker claim",
+  "subjective_listening_status": "PENDING_HUMAN_RATINGS",
+  "reporting_source_sha256": {
+    "code/plot_evaluation.m": "0decc00df286876b767eb461842a2c3aa27669061cb1189e9b20f3c6799176d9",
+    "code/export_evaluation_examples.m": "e4a5f8caaaa37c2614ac87a442a45ca6cd74a37d3c11b183d8c3be01859541ea",
+    "code/build_listening_pack.py": "e155bd8cf3ff67b04c9f04aca8823ec7ab19730d4c94b71806ebfbe2b8ce1746",
+    "code/summarize_listening.py": "b0fcca790a86f386f541f188a0ee31137fc8c6c9606d9afe5bf052c6702466aa",
+    "code/publish_evaluation.py": "e01170e49353b980fd9d362eb0b2bd12c5c8cead0ddd16bb38938720bb6afc5b"
+  },
+  "published_artifacts_sha256": {
+    "reports/evaluation/per_file_metrics.csv": "e95ee69aba63b2b26937f7cdaa48c323f533c958f749ecae3a7232c69d1ea252",
+    "reports/evaluation/overall.csv": "20f7ba537909ddf10109345c7d56541f90275b7577ddb4f16988c4196be2106c",
+    "reports/evaluation/by_condition.csv": "da561a2cd8bfdf24984fd59f5908653035fc4bd8518270ed362ca4a2e1b3fd94",
+    "reports/evaluation/by_speaker.csv": "9360efb27a88c278edc114912babebcf2d1a141999025f3f2d6dc61e7da7e1f4",
+    "reports/evaluation/noise_mode_comparisons.csv": "0775b9bdb55e30b0f3fec0bdf16d0f3e280fff339f4a7fb346273b182e472b75",
+    "reports/evaluation/case_selection.json": "3904c1380a3e23a592df04818a7851267e6ad6ba7a167de708583b9f3c49df88",
+    "reports/evaluation/listening_status.json": "7164a974520921341524d6034d884f9e46c2cc9fff570bb88b5ab9cde59deb47",
+    "reports/evaluation/listening_ratings_template.csv": "93872a579a495c5442591d7bb29d4336f70a58574a4dc604e81908c37084431a",
+    "assets/figures/results/heldout-overall.png": "11a5c29052367e5a546df7095a6f92051be0252765773470838d0b0bd27bed98",
+    "assets/figures/results/heldout-conditions.png": "bc6d56cfb36a8dfe1dfa7238bfb6c277431606a14c6bf252ceffb2c58aff6999",
+    "assets/figures/results/heldout-speakers.png": "9da889860ad596d24f304f939b25165d58304e86e76fe526fa1d004245dedce4",
+    "assets/figures/results/tuning-strength-tradeoff.png": "b5ae912ee533f8ffb1c2128c9ac9357a9aa7490a1766586edb14e0049ade6087",
+    "assets/figures/results/example-bus.png": "bcaf6c252d73d211e0e60685d8f3089289f6b409a0cc425e4852a45870f0d687",
+    "assets/figures/results/example-office.png": "5889ce8798b2fbbb8ac6996109e36788348eb01ba6ab1e36cc60586e899c4752",
+    "assets/figures/results/example-cafe.png": "a8b5e6619bf5860ed04ab6dd3aa8c31c48ec740578072bb9305e23885d13d15a",
+    "assets/figures/results/posthoc-stoi-loss.png": "4e485405b314165336b357152af718c34d9e7df47caa6e6ff598352729e96d4c",
+    "reports/evaluation/figure_captions.json": "871ee59e55b7f869efe0ac857acfa182a2ad8550e4967b9736cc1754992616d0",
+    "reports/evaluation/listening_protocol.json": "903a9c905317e838a12f2fbfbc5934d2b1e2630266eddcd1a36e2cd33d7946fb"
+  }
+}

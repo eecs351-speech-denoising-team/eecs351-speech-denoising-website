@@ -1,0 +1,14 @@
+{
+  "status": "PENDING_HUMAN_RATINGS",
+  "trials": 6,
+  "samples": 24,
+  "submitted_listeners": 0,
+  "selection": "Predeclared first file per noise/speaker at nominal 2.5 dB; pilot only",
+  "systems": "Four primary systems; noise-update variants are not in this listening pilot",
+  "scale": "Four ordinal 1-to-5 ratings: noise cleanliness, speech naturalness, intelligibility, overall quality",
+  "randomization": "Fixed seed 351; independent method-label permutation per trial, common order across listeners",
+  "playback": "Same valid samples and one export gain per utterance; no independent normalization",
+  "aggregation": "Require all 24 samples per listener; decode after collection; report actual listener count",
+  "zip_sha256": "58090b4f049094f45da7f7b8e3dc879f8b3c1a2882987808dee1fcdde2aaea66",
+  "organizer_key_in_package": false
+}

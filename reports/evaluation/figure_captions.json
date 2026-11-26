@@ -1,0 +1,10 @@
+{
+  "heldout-overall.png": "240 held-out pairs; four frozen primary systems; descriptive 95% stratified file-bootstrap intervals.",
+  "heldout-conditions.png": "Primary changes in all 12 noise/SNR cells; 20 paired files per cell; STOI labels are scaled by 1000.",
+  "heldout-speakers.png": "Primary paired changes for each of the two held-out speakers; 120 files per speaker.",
+  "tuning-strength-tradeoff.png": "400 tuning pairs only: subtraction alpha=1,2,4, beta=0.01, noise fraction=0.2; not a new test-set search.",
+  "example-bus.png": "Predeclared bus example p232_414, nominal 2.5 dB; common crop, original common spectral scale.",
+  "example-office.png": "Predeclared office example p232_186, nominal 2.5 dB; common crop, original common spectral scale.",
+  "example-cafe.png": "Predeclared cafe example p232_415, nominal 2.5 dB; common crop, original common spectral scale.",
+  "posthoc-stoi-loss.png": "Explicit posthoc diagnostic: p257_110, wiener, delta STOI -0.044205. Not a representative sample."
+}

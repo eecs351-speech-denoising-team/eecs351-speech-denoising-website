@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "freeze_sha256": "fcf2e03293bb7851f2d62fda18f2824fdf674172e41bbfe37820a2c7a997b58c",
+  "variants": [
+    {
+      "id": "identity",
+      "method": "identity",
+      "options": {},
+      "role": "primary"
+    },
+    {
+      "id": "fir_100_7000",
+      "method": "fir",
+      "options": {
+        "order": 128,
+        "cutoffHz": 100,
+        "upperCutoffHz": 7000
+      },
+      "role": "primary"
+    },
+    {
+      "id": "ss_fixed_fraction10",
+      "method": "spectral_subtraction",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "fixed",
+        "alpha": 1,
+        "beta": 0.01
+      },
+      "role": "primary"
+    },
+    {
+      "id": "ss_pause_updated_pauseThresholdDb0",
+      "method": "spectral_subtraction",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.2,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 0,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "alpha": 1,
+        "beta": 0.01
+      },
+      "role": "independent_noise_mode"
+    },
+    {
+      "id": "wiener_fixed_fraction10",
+      "method": "wiener",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "fixed",
+        "gainFloor": 0.05
+      },
+      "role": "primary"
+    },
+    {
+      "id": "wiener_pause_updated_pauseThresholdDb0",
+      "method": "wiener",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.2,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 0,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "gainFloor": 0.05
+      },
+      "role": "independent_noise_mode"
+    },
+    {
+      "id": "ss_pause_updated_fraction10",
+      "method": "spectral_subtraction",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "alpha": 1,
+        "beta": 0.01
+      },
+      "role": "matched_noise_mode"
+    },
+    {
+      "id": "wiener_pause_updated_fraction10",
+      "method": "wiener",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "gainFloor": 0.05
+      },
+      "role": "matched_noise_mode"
+    }
+  ],
+  "primary": {
+    "identity": "identity",
+    "fir": "fir_100_7000",
+    "spectral_subtraction": "ss_fixed_fraction10",
+    "wiener": "wiener_fixed_fraction10"
+  },
+  "matched_noise_mode_pairs": [
+    {
+      "method": "spectral_subtraction",
+      "anchor_candidate": "ss_fixed_fraction10",
+      "counterpart_score_candidate": "ss_pause_updated_fraction10",
+      "counterpart_options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "alpha": 1,
+        "beta": 0.01
+      }
+    },
+    {
+      "method": "wiener",
+      "anchor_candidate": "wiener_fixed_fraction10",
+      "counterpart_score_candidate": "wiener_pause_updated_fraction10",
+      "counterpart_options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "gainFloor": 0.05
+      }
+    }
+  ],
+  "listening_selection": "First manifest file per noise and speaker at nominal 2.5 dB: six low-SNR trials",
+  "bootstrap": {
+    "seed": 351,
+    "replicates": 2000,
+    "strata": [
+      "noise",
+      "nominal_snr_db",
+      "speaker"
+    ],
+    "interpretation": "Descriptive file-resampling intervals conditional on these two speakers and conditions"
+  }
+}

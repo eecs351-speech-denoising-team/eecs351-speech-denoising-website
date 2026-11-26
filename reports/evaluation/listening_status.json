@@ -1,0 +1,8 @@
+{
+  "status": "PENDING_HUMAN_RATINGS",
+  "trials": 6,
+  "samples": 24,
+  "submitted_listeners": 0,
+  "freeze_sha256": "fcf2e03293bb7851f2d62fda18f2824fdf674172e41bbfe37820a2c7a997b58c",
+  "organizer_key_in_package": false
+}

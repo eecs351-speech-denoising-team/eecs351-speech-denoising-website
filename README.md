@@ -271,6 +271,105 @@ Calibration and freeze regression checks:
 matlab -batch "addpath('code'); r=runtests('tests'); assertSuccess(r);"
 ```
 
+## Held-out evaluation and listening materials (steps 6–7)
+
+The frozen configuration was applied unchanged to **all 240 evaluation pairs**:
+three noises, four nominal SNRs, 20 files per cell, and 120 files per speaker.
+The predeclared plan contains eight variants: four primary systems, two
+independently tuned update-mode alternatives, and two matched update-mode
+counterparts. All **1,920 paired score rows** are retained; no files were dropped.
+This is the fixed 240-pair subset, not an evaluation of all 824 test recordings.
+
+| Primary system | Mean STOI | Mean ΔSTOI | Mean ΔSNR (dB) |
+| --- | ---: | ---: | ---: |
+| Noisy baseline | 0.927326 | 0.000000 | 0.000 |
+| FIR | 0.926872 | −0.000454 | +4.445 |
+| Power subtraction | 0.925477 | −0.001849 | +0.805 |
+| Wiener | 0.924454 | −0.002872 | +1.291 |
+
+All three primary methods improved mean SNR while slightly reducing mean STOI.
+SNR improvement therefore does not establish an intelligibility improvement.
+The condition tables show why averaging alone is insufficient: FIR gives about
++9.10 dB on bus/2.5 dB and +9.54 dB on office/2.5 dB, but −0.49 dB on café/17.5 dB.
+Its mean ΔSTOI is −0.001417 for p232 and +0.000509 for p257. These two speakers
+do not establish broad speaker generalization.
+
+Matched pause updates add +0.412 dB (subtraction) and +0.579 dB (Wiener) relative
+to fixed estimates, with further mean STOI changes of −0.000751 and −0.001343.
+The matched comparisons change only noiseMode; independently tuned mode-family
+winners are separately identified in the eight-variant table. No configuration
+was changed or selected again after viewing held-out scores.
+
+[`reports/evaluation/`](reports/evaluation/) contains the complete per-file table,
+overall, 12-cell and two-speaker summaries, matched-mode comparisons, case
+selection, listening status, captions and provenance. The overall intervals are
+2,000 paired file-bootstrap resamples within each noise/SNR/speaker stratum,
+seed 351. They describe uncertainty for this fixed speaker/condition mix;
+they do not quantify uncertainty over new speakers. Files, plans, frozen
+settings, source versions and published metric tables have recorded SHA-256s.
+
+Result figures are under [`assets/figures/results/`](assets/figures/results/):
+
+- `heldout-overall.png`: primary changes with descriptive bootstrap intervals.
+- `heldout-conditions.png`: all 12 noise/SNR cells with 20 files each.
+- `heldout-speakers.png`: results for each speaker, 120 files each.
+- `tuning-strength-tradeoff.png`: stronger subtraction on the **existing tuning
+  data**, not a new test-set parameter search.
+- `example-*.png` and `posthoc-stoi-loss.png`: common-scale before/after spectra.
+
+The largest selected primary STOI-loss diagnostic is p257_110 (café, 2.5 dB):
+Wiener has ΔSTOI −0.044205 despite ΔSNR +0.731 dB. This case was explicitly
+selected posthoc to illustrate a failure, and is not a representative sample.
+Another diagnostic can overlap a predeclared listening file; case-selection
+records preserve both purposes without duplicating the audio folder.
+
+Reproduce the evaluation and materials:
+
+```sh
+.venv/bin/python code/run_evaluation.py --workers 4
+# For the same completed/interrupted run, add --resume.
+matlab -batch "addpath('code'); plot_evaluation; export_evaluation_examples;"
+.venv/bin/python code/build_listening_pack.py
+.venv/bin/python code/publish_evaluation.py
+```
+
+The local `outputs/evaluation/listening_pack.zip` contains an offline page,
+30 WAVs, instructions and a blank CSV template. Extract it and open
+`index.html`. Six **predeclared nominal-2.5 dB** trials cover every noise/speaker
+combination. Each trial has a clean reference and four anonymously labeled
+primary systems; all tracks share the same excerpt and export gain. Method
+labels are independently shuffled per trial with seed 351. The organizer key
+is kept outside the ZIP at `outputs/evaluation/organizer/listening_key.csv`.
+
+Listeners enter an anonymous code and rate noise cleanliness, speech naturalness,
+intelligibility and overall quality from 1 to 5. The page saves progress locally
+when supported and exports CSV. `reports/evaluation/listening_ratings_template.csv`
+also supports manual entry. The pilot uses a shared trial order and a small
+low-SNR sample; it includes the four primary systems, not update-mode variants.
+It should not be presented as a population-wide listening study.
+
+**Human ratings are pending by design.** There are currently zero submitted
+listeners and no subjective quality results. Blank rows are never treated as
+zero scores. After real listeners complete all 24 samples, decode and summarize:
+
+```sh
+.venv/bin/python code/summarize_listening.py --ratings ratings_P01.csv ratings_P02.csv
+```
+
+The importer rejects partial sample scores, duplicate ratings, unknown labels
+and incomplete listener trial sets. It reports actual listener counts and
+means of per-listener means; it does not create placeholder responses. Keep
+the organizer key out of view until rating is complete. Generated audio,
+the ZIP and organizer files stay local and can be regenerated; published
+objective tables and figures are versioned in the repository.
+
+The generated page's controls, local progress and CSV export can be checked
+without writing real study ratings:
+
+```sh
+node tests/check_listening_page.js outputs/evaluation/listening_pack/index.html
+```
+
 ## Website
 
 - `index.html` — project overview and report links
@@ -299,6 +398,9 @@ matlab -batch "addpath('code'); r=runtests('tests'); assertSuccess(r);"
 - `code/speech_metrics.py` — common-interval, amplitude-sensitive SNR/STOI scoring
 - `code/run_tuning.py`, `code/prepare_tuning.m` — complete training-only parameter search
 - `code/denoise_frozen.m`, `code/run_frozen_demo.m` — apply and inspect frozen primary selections
+- `code/run_evaluation.py`, `code/prepare_evaluation.m`, `code/evaluation_analysis.py` — frozen held-out evaluation and paired summaries
+- `code/plot_evaluation.m`, `code/export_evaluation_examples.m` — result figures and aligned before/after samples
+- `code/build_listening_pack.py`, `code/summarize_listening.py` — blinded material generation and later real-rating import
 
 The archived proposal/PDF documents the original selection procedure. The live
 analysis script now **reads** the committed 400/240 manifests and never replaces

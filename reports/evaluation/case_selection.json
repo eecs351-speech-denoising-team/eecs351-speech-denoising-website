@@ -1,0 +1,68 @@
+{
+  "status": "LISTENING_RATINGS_PENDING",
+  "cases": [
+    {
+      "file": "p232_414",
+      "purpose": "predeclared_low_snr_listening",
+      "noise": "bus",
+      "speaker": "p232",
+      "nominal_snr_db": 2.5
+    },
+    {
+      "file": "p257_187",
+      "purpose": "predeclared_low_snr_listening",
+      "noise": "bus",
+      "speaker": "p257",
+      "nominal_snr_db": 2.5
+    },
+    {
+      "file": "p232_186",
+      "purpose": "predeclared_low_snr_listening",
+      "noise": "office",
+      "speaker": "p232",
+      "nominal_snr_db": 2.5
+    },
+    {
+      "file": "p257_098",
+      "purpose": "predeclared_low_snr_listening",
+      "noise": "office",
+      "speaker": "p257",
+      "nominal_snr_db": 2.5
+    },
+    {
+      "file": "p232_415",
+      "purpose": "predeclared_low_snr_listening",
+      "noise": "cafe",
+      "speaker": "p232",
+      "nominal_snr_db": 2.5
+    },
+    {
+      "file": "p257_391",
+      "purpose": "predeclared_low_snr_listening",
+      "noise": "cafe",
+      "speaker": "p257",
+      "nominal_snr_db": 2.5
+    },
+    {
+      "file": "p257_110",
+      "purpose": "posthoc_largest_stoi_loss",
+      "noise": "cafe",
+      "speaker": "p257",
+      "nominal_snr_db": 2.5,
+      "method": "wiener",
+      "delta_stoi": -0.04420508967762726,
+      "delta_snr_db": 0.7309325022034452
+    },
+    {
+      "file": "p257_187",
+      "purpose": "posthoc_snr_gain_with_stoi_loss",
+      "noise": "bus",
+      "speaker": "p257",
+      "nominal_snr_db": 2.5,
+      "method": "fir",
+      "delta_stoi": -0.00021910892707810437,
+      "delta_snr_db": 10.299164283625895
+    }
+  ],
+  "note": "Six predeclared low-SNR pilot trials plus two explicitly posthoc diagnostic selections; no retuning."
+}
