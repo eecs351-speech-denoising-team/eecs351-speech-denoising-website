@@ -276,6 +276,8 @@ matlab -batch "addpath('code'); r=runtests('tests'); assertSuccess(r);"
 - `index.html` — project overview and report links
 - `proposal.html` — report text, equations, tables, and figures corresponding to the report PDF
 - `progress.html` — November progress report with data, three diagnostic plots, current challenges, a three-week plan, and a technical takeaway
+- `presentation.html` — project presentation slides with an in-browser denoising demo (arrow keys to navigate, `F` fullscreen, `N` speaker notes, `T` 10-minute timer)
+- `assets/presentation/` — slide styles and scripts; `dsp.js` is a JavaScript port of `code/denoise_speech.m`, and `clips.js` holds the three exploratory pairs at 16 kHz (regenerate with `python3 code/build_presentation_clips.py`; needs NumPy and SciPy)
 - `methods.html` — Technical Details; reserved for future content; hidden from navigation
 - `results.html` — Results; reserved for future content; hidden from navigation
 - `references.html` — project references
