@@ -188,6 +188,89 @@ Final performance comparisons remain on the held-out set after tuning.
 matlab -batch "addpath('code'); r=runtests('tests/test_noise_updates.m'); assertSuccess(r);"
 ```
 
+## Verified scoring and frozen tuning (steps 4–5)
+
+Scoring uses the intersection of every candidate's valid interval. For this
+search, all FIRs have order 128, so **every signal and baseline is scored on
+samples 65 through N−64**. FIR outputs have already been delay-compensated;
+there is no second shift, correlation-based alignment, gain fit, or loudness
+normalization. SNR includes residual noise and speech distortion. Classic
+STOI uses `pystoi==0.4.1`; results are arithmetic means of per-utterance metrics.
+`speech_metrics.py` rejects invalid intervals, mismatched shapes, silent
+references, and unusable STOI inputs. Failed cases cannot be silently dropped
+before selecting a configuration.
+
+The predeclared [`config/tuning_candidates.json`](config/tuning_candidates.json)
+contains 41 candidates: identity, six FIRs (100/200/300 Hz lower cutoff, with
+or without a 7 kHz upper cutoff), 20 power-subtraction and 14 Wiener variants.
+The spectral search covers the proposal's strengths/floors plus one-factor
+variations around the default noise fraction, update speed, and pause threshold.
+It is a bounded search, not an exhaustive Cartesian parameter grid.
+
+Run the complete search from the repository root:
+
+```sh
+.venv/bin/python code/run_tuning.py --workers 4
+# Resume an existing run only when inputs and scoring code are unchanged:
+.venv/bin/python code/run_tuning.py --workers 4 --resume
+```
+
+The runner verifies the training audio hashes, runs metric calibration, calls
+MATLAB once to generate unscaled outputs, and batch-scores with persistent
+Python workers. All 400 tuning pairs are used for every candidate; no held-out
+audio is loaded. Select by descending mean STOI, then mean ΔSNR, then ID for
+deterministic ties. Intermediate MAT bundles are deleted after successful
+scoring; `--keep-cache` retains them. Protocol/signature checks protect resume
+from changes to source, packages, candidates, manifests, or input audio.
+
+The completed run has **16,400 measurements**, no omitted pairs, and these
+primary training selections:
+
+| Method | Frozen candidate settings | Mean STOI | Mean ΔSNR (dB) |
+| --- | --- | ---: | ---: |
+| Noisy baseline | Identity | 0.838221 | 0.000 |
+| FIR | Order 128, 100–7000 Hz band-pass | 0.838170 | +2.308 |
+| Power subtraction | Fixed, lowest 10% frames, α=1, β=0.01 | 0.838401 | +1.105 |
+| Wiener | Fixed, lowest 10% frames, gain floor 0.05 | 0.838369 | +1.679 |
+
+STOI differences are very small; they do not establish significant improvements
+or held-out performance. Pause-updated family winners scored below the fixed
+family winners on this tuning set. Their separately selected configurations
+are retained for comparison, alongside matched mode comparisons that change
+only the noise-update policy. The six family winners and provenance are saved
+in [`config/frozen_denoisers.json`](config/frozen_denoisers.json); all 41 aggregate
+rows are in [`reports/tuning_summary.csv`](reports/tuning_summary.csv).
+
+Apply the frozen primary selections explicitly; prototype defaults are unchanged:
+
+```matlab
+addpath('code');
+[output,info] = denoise_frozen(y,16000,'wiener');
+% info.comparisonSamples is the common scoring interval.
+run_frozen_demo;
+```
+
+`denoise_frozen` checks the denoiser's SHA-256 against the recorded source and
+rejects changed implementations or a different sample rate. The freeze records
+the complete scoring source hashes, package versions, candidate/manifest/audio
+digests, selection rule, and metric-table hashes. Reproduce a new tuning run
+in a new `--output` directory and review it before replacing a published freeze.
+
+Local detailed evidence lives in `outputs/tuning/`: protocol, 400 score
+checkpoints, `per_file_metrics.csv`, candidate summary, and run status. The
+`listening/` directory contains three predetermined training cells (babble/0,
+traffic/5, kitchen/15 dB), matched-level audio, unscaled MAT outputs, and a
+common-scale spectrogram comparison. Frozen outputs were independently rescored
+against their original tuning rows. These exports support later listening
+review; subjective listening results are not claimed here.
+
+Calibration and freeze regression checks:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
+matlab -batch "addpath('code'); r=runtests('tests'); assertSuccess(r);"
+```
+
 ## Website
 
 - `index.html` — project overview and report links
@@ -211,6 +294,9 @@ matlab -batch "addpath('code'); r=runtests('tests/test_noise_updates.m'); assert
 - `code/project_stoi.m`, `code/score_stoi.py` — pinned classic-STOI interface
 - `code/denoise_speech.m` — identity, FIR, power subtraction, and Wiener baselines
 - `code/run_denoising_demo.m` — matched-gain exploratory audio comparisons
+- `code/speech_metrics.py` — common-interval, amplitude-sensitive SNR/STOI scoring
+- `code/run_tuning.py`, `code/prepare_tuning.m` — complete training-only parameter search
+- `code/denoise_frozen.m`, `code/run_frozen_demo.m` — apply and inspect frozen primary selections
 
 The archived proposal/PDF documents the original selection procedure. The live
 analysis script now **reads** the committed 400/240 manifests and never replaces

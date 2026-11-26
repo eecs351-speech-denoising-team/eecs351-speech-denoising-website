@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "status": "FROZEN",
+  "created_utc": "2026-11-26T18:49:26.797722+00:00",
+  "protocol": {
+    "schema_version": 1,
+    "split": "tuning",
+    "pairs": 400,
+    "candidate_count": 41,
+    "fs": 16000,
+    "common_crop_samples_each_end": 64,
+    "alignment": "Use denoiser-aligned outputs; no additional shift or gain fit",
+    "metrics": "Classic pystoi, whole-valid-interval SNR; per-utterance arithmetic means",
+    "selection": "Descending mean STOI, then mean delta SNR, then candidate ID",
+    "search": "Core suppression grid plus one-factor-at-a-time noise-estimator variations",
+    "tuning_manifest_sha256": "a57df9a99e227efc0a97c42f1067fcf121bd372a5ee404c091befaca410b1143",
+    "candidate_sha256": "af0fa28eb464366941d4f025f6bd00924572e7d4dfc4a6fc9e9ccdb4fa7b93b0",
+    "tuning_audio_digest": "e7c692cf6c402e4d546b9b7eb54184063d90e496849e71cab8d57b4adb4949d9",
+    "source_sha256": {
+      "code/denoise_speech.m": "02ed01b2793a63d0dbba095273a950d8139853ea960217cfa7e900eee56f2d19",
+      "code/load_speech_pair.m": "9c9c624a4c8c979f8e484350d789a77f569ef3295242f797755685584bfa6bd0",
+      "code/project_config.m": "02b33ac8dbf6df690ea3ea97adfac2199716a3af35a600b68a856a313701d5ad",
+      "code/prepare_tuning.m": "cb038a2bd6efb130de7343b2fdbdf27ad2faa5021b5aeb87d73e71b9a33ace95",
+      "code/score_stoi.py": "34ea8aa07c56df27512b1a929c6197aeb59799d7840b252ae8a0282ebe7d7dd6",
+      "code/speech_metrics.py": "4d9873e8ad819b59ecca3d900cd955cabeb9c428b60b9f95891c92f21d59e73f",
+      "code/tuning_candidates.py": "21ac6a9b26d832968a36a946bd27399451474a6d27876d395720d32911be0a28",
+      "code/run_tuning.py": "1529339d723820723dbcf8162e10d246de4f5082fe5857652240a0bfccab5935",
+      "code/prepare_data.py": "528734725a114cb48a63827c8fb42f74d770ed0ef0de8230b9c7b48fcce9941a",
+      "requirements.txt": "290e488f29dfb2c1c28e2ce90b0c5f2021a025be998433568be698da6faaaf6d",
+      "tests/test_metrics.py": "4465f544550e41de6c379afa148df6c335be417046ffa7528947fe84ed921894"
+    },
+    "packages": {
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "pystoi": "0.4.1"
+    },
+    "signature": "c1446baaae42e3ae9b9f0f01bc3c319566cec1f72031fe75f62a13664475b382"
+  },
+  "selected": [
+    {
+      "id": "identity",
+      "method": "identity",
+      "family": "baseline",
+      "options": {},
+      "tuning_metrics": {
+        "candidate": "identity",
+        "method": "identity",
+        "family": "baseline",
+        "pairs": 400,
+        "mean_stoi": 0.8382209934148951,
+        "mean_delta_stoi": 0.0,
+        "mean_delta_snr_db": 0.0,
+        "mean_snr_out_db": 6.150729500614331,
+        "stoi_improved_fraction": 0.0,
+        "mean_update_frames": 0.0,
+        "peak_abs": 0.7844724079700045
+      }
+    },
+    {
+      "id": "fir_100_7000",
+      "method": "fir",
+      "family": "fir",
+      "options": {
+        "order": 128,
+        "cutoffHz": 100,
+        "upperCutoffHz": 7000
+      },
+      "tuning_metrics": {
+        "candidate": "fir_100_7000",
+        "method": "fir",
+        "family": "fir",
+        "pairs": 400,
+        "mean_stoi": 0.8381701995424032,
+        "mean_delta_stoi": -5.0793872491826515e-05,
+        "mean_delta_snr_db": 2.3083110624306835,
+        "mean_snr_out_db": 8.459040563045015,
+        "stoi_improved_fraction": 0.4,
+        "mean_update_frames": 0.0,
+        "peak_abs": 0.7514019127319601
+      }
+    },
+    {
+      "id": "ss_fixed_fraction10",
+      "method": "spectral_subtraction",
+      "family": "ss_fixed",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "fixed",
+        "alpha": 1,
+        "beta": 0.01
+      },
+      "tuning_metrics": {
+        "candidate": "ss_fixed_fraction10",
+        "method": "spectral_subtraction",
+        "family": "ss_fixed",
+        "pairs": 400,
+        "mean_stoi": 0.8384006169347848,
+        "mean_delta_stoi": 0.00017962351988977485,
+        "mean_delta_snr_db": 1.1047923442810843,
+        "mean_snr_out_db": 7.255521844895416,
+        "stoi_improved_fraction": 0.555,
+        "mean_update_frames": 0.0,
+        "peak_abs": 0.779521670774198
+      }
+    },
+    {
+      "id": "ss_pause_updated_pauseThresholdDb0",
+      "method": "spectral_subtraction",
+      "family": "ss_pause_updated",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.2,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 0,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "alpha": 1,
+        "beta": 0.01
+      },
+      "tuning_metrics": {
+        "candidate": "ss_pause_updated_pauseThresholdDb0",
+        "method": "spectral_subtraction",
+        "family": "ss_pause_updated",
+        "pairs": 400,
+        "mean_stoi": 0.837697411161943,
+        "mean_delta_stoi": -0.0005235822529521322,
+        "mean_delta_snr_db": 1.3791406315477346,
+        "mean_snr_out_db": 7.529870132162066,
+        "stoi_improved_fraction": 0.5075,
+        "mean_update_frames": 31.56,
+        "peak_abs": 0.7744044098009493
+      }
+    },
+    {
+      "id": "wiener_fixed_fraction10",
+      "method": "wiener",
+      "family": "wiener_fixed",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "fixed",
+        "gainFloor": 0.05
+      },
+      "tuning_metrics": {
+        "candidate": "wiener_fixed_fraction10",
+        "method": "wiener",
+        "family": "wiener_fixed",
+        "pairs": 400,
+        "mean_stoi": 0.8383692315045829,
+        "mean_delta_stoi": 0.0001482380896879347,
+        "mean_delta_snr_db": 1.679271518096913,
+        "mean_snr_out_db": 7.830001018711243,
+        "stoi_improved_fraction": 0.535,
+        "mean_update_frames": 0.0,
+        "peak_abs": 0.7702781529189416
+      }
+    },
+    {
+      "id": "wiener_pause_updated_pauseThresholdDb0",
+      "method": "wiener",
+      "family": "wiener_pause_updated",
+      "options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.2,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 0,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "gainFloor": 0.05
+      },
+      "tuning_metrics": {
+        "candidate": "wiener_pause_updated_pauseThresholdDb0",
+        "method": "wiener",
+        "family": "wiener_pause_updated",
+        "pairs": 400,
+        "mean_stoi": 0.837738095379024,
+        "mean_delta_stoi": -0.0004828980358711482,
+        "mean_delta_snr_db": 2.0547673792349532,
+        "mean_snr_out_db": 8.205496879849283,
+        "stoi_improved_fraction": 0.495,
+        "mean_update_frames": 31.56,
+        "peak_abs": 0.7638241466189901
+      }
+    }
+  ],
+  "primary": {
+    "identity": "identity",
+    "fir": "fir_100_7000",
+    "spectral_subtraction": "ss_fixed_fraction10",
+    "wiener": "wiener_fixed_fraction10"
+  },
+  "matched_noise_mode_pairs": [
+    {
+      "method": "spectral_subtraction",
+      "anchor_candidate": "ss_fixed_fraction10",
+      "counterpart_score_candidate": "ss_pause_updated_fraction10",
+      "counterpart_options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "alpha": 1,
+        "beta": 0.01
+      }
+    },
+    {
+      "method": "wiener",
+      "anchor_candidate": "wiener_fixed_fraction10",
+      "counterpart_score_candidate": "wiener_pause_updated_fraction10",
+      "counterpart_options": {
+        "windowLength": 400,
+        "hop": 160,
+        "nfft": 512,
+        "noiseFraction": 0.1,
+        "noiseLambda": 0.9,
+        "pauseThresholdDb": 3,
+        "minPauseFrames": 3,
+        "minEnergyContrastDb": 3,
+        "storeNoiseHistory": false,
+        "noiseMode": "pause_updated",
+        "gainFloor": 0.05
+      }
+    }
+  ],
+  "note": "Training-only selection. No held-out performance claimed; mode-family winners are independently tuned.",
+  "artifacts": {
+    "per_file_metrics_sha256": "caec82e2de23de71992f494742acc111fc9267165a2d74b3f6fbccb61c2384af",
+    "candidate_summary_sha256": "98d09c2530bc1e9cce914b428c97ca4c3a2df28d6b2ded398236979e004f2f5d",
+    "raw_candidate_summary_sha256": "c0bc8a4659169080cefd9415787d80615134c8a7b234e9d633baf7c94454f49f"
+  }
+}
