@@ -3,7 +3,8 @@ function [output, info] = denoise_speech(y, fs, method, options)
 % Methods: identity, fir, spectral_subtraction, wiener.
 % Returns an aligned, same-length column vector without gain normalization.
 % info.validSamples gives the inclusive interval unaffected by FIR zero padding.
-% Spectral methods use a fixed estimate from low-energy, unpadded noisy frames.
+% Spectral noiseMode: fixed (default) or pause_updated. Both initialize from
+% the same low-energy, unpadded noisy frames. Detection uses noisy input only.
 % Defaults are implementation candidates, not tuned or validated optima.
 if nargin < 4, options=struct; end
 validateattributes(y,{'double','single'},{'column','real','finite','nonempty'});
@@ -39,7 +40,9 @@ switch method
         info.options=options;
     otherwise
         defaults=struct('windowLength',round(0.025*fs),'hop',round(0.010*fs), ...
-            'nfft',2^nextpow2(round(0.025*fs)),'noiseFraction',0.2);
+            'nfft',2^nextpow2(round(0.025*fs)),'noiseFraction',0.2, ...
+            'noiseMode','fixed','noiseLambda',0.9,'pauseThresholdDb',3, ...
+            'minPauseFrames',3,'minEnergyContrastDb',3,'storeNoiseHistory',false);
         if strcmp(method,'spectral_subtraction')
             defaults.alpha=1; defaults.beta=0.01;
         else
@@ -51,6 +54,12 @@ switch method
         validateattributes(hop,{'numeric'},{'scalar','integer','positive','<',L});
         validateattributes(K,{'numeric'},{'scalar','integer','even','>=',L});
         validateattributes(options.noiseFraction,{'numeric'},{'scalar','real','>',0,'<=',1});
+        options.noiseMode=validatestring(options.noiseMode,{'fixed','pause_updated'});
+        validateattributes(options.noiseLambda,{'numeric'},{'scalar','real','>=',0,'<=',1});
+        validateattributes(options.pauseThresholdDb,{'numeric'},{'scalar','real','finite'});
+        validateattributes(options.minPauseFrames,{'numeric'},{'scalar','integer','positive'});
+        validateattributes(options.minEnergyContrastDb,{'numeric'},{'scalar','real','finite','nonnegative'});
+        validateattributes(options.storeNoiseHistory,{'logical'},{'scalar'});
         w=hann(L,'periodic');
 
         % Estimate noise from original full frames, excluding artificial padding.
@@ -71,15 +80,17 @@ switch method
         spectrum=fft(padded(indices).*w,K,1);
         spectrum=spectrum(1:K/2+1,:);
         power=abs(spectrum).^2;
+        [noiseForGain,tracking]=trackNoise(power,mean(padded(indices).^2,1), ...
+            starts-L,n,L,energy,rank,chosen,noisePower,options);
         if strcmp(method,'spectral_subtraction')
             validateattributes(options.alpha,{'numeric'},{'scalar','real','finite','nonnegative'});
             validateattributes(options.beta,{'numeric'},{'scalar','real','>=',0,'<=',1});
-            speechPower=max(power-options.alpha*noisePower,options.beta*noisePower);
+            speechPower=max(power-options.alpha*noiseForGain,options.beta*noiseForGain);
             enhanced=sqrt(speechPower).*exp(1i*angle(spectrum));
         else
             validateattributes(options.gainFloor,{'numeric'},{'scalar','real','>=',0,'<=',1});
-            speechPower=max(power-noisePower,0);
-            denominator=speechPower+noisePower;
+            speechPower=max(power-noiseForGain,0);
+            denominator=speechPower+noiseForGain;
             denominator(denominator==0)=1;
             gain=max(options.gainFloor,speechPower./denominator);
             enhanced=gain.*spectrum;
@@ -97,12 +108,65 @@ switch method
         assert(all(weights(keep)>0),'EECS351:Reconstruction','Uncovered output samples.');
         output=reconstructed(keep)./weights(keep);
         info.options=options;
-        info.noiseEstimator='fixed-low-energy-noisy-frames';
+        if strcmp(options.noiseMode,'fixed')
+            info.noiseEstimator='fixed-low-energy-noisy-frames';
+        else
+            info.noiseEstimator='pause-updated-low-energy-noisy-frames';
+        end
         info.noiseFrameStarts=originalStarts(chosen);
         info.noisePower=noisePower;
+        info.noiseTracking=tracking;
+        if options.storeNoiseHistory
+            info.noisePowerHistory=repmat(noisePower,1,numel(starts));
+            if strcmp(options.noiseMode,'pause_updated'), info.noisePowerHistory=noiseForGain; end
+        end
 end
 assert(isequal(size(output),size(y)) && all(isfinite(output)), ...
     'EECS351:DenoiserOutput','Denoiser returned invalid samples or length.');
+end
+
+function [noiseForGain,tracking]=trackNoise(power,frameEnergy,frameStarts,n,L,energy,rank,chosen,initial,options)
+% This is an offline candidate pause detector, not reference-derived VAD.
+% Require consecutive full low-energy frames and measurable energy contrast.
+% With no credible candidates, hold the initial estimate and report why.
+baseEnergy=max(energy(chosen));
+threshold=baseEnergy*10^(options.pauseThresholdDb/10);
+assert(isfinite(threshold),'EECS351:PauseThreshold','Pause energy threshold overflowed.');
+highEnergy=energy(rank(max(1,ceil(0.9*numel(rank)))));
+contrast=10*log10((highEnergy+eps)/(baseEnergy+eps));
+fullFrames=frameStarts>=1 & frameStarts+L-1<=n;
+candidates=fullFrames & frameEnergy<=threshold;
+updates=false(size(candidates));
+noiseForGain=initial;
+reason='fixed-mode';
+if strcmp(options.noiseMode,'pause_updated')
+    if contrast<options.minEnergyContrastDb
+        reason='insufficient-energy-contrast';
+    else
+        run=0;
+        for k=1:numel(candidates)
+            if candidates(k), run=run+1; else, run=0; end
+            updates(k)=run>=options.minPauseFrames;
+        end
+        if any(updates), reason='none'; else, reason='no-confirmed-pause'; end
+    end
+    noiseForGain=zeros(size(power));
+    state=initial;
+    for k=1:size(power,2)
+        if updates(k)
+            state=options.noiseLambda*state+(1-options.noiseLambda)*power(:,k);
+        end
+        noiseForGain(:,k)=state; % Update before applying this frame's gain.
+    end
+    final=noiseForGain(:,end);
+else
+    final=initial;
+end
+tracking=struct('frameStarts',frameStarts,'fullFrames',fullFrames, ...
+    'frameEnergy',frameEnergy,'pauseEnergyThreshold',threshold, ...
+    'energyContrastDb',contrast,'pauseCandidates',candidates, ...
+    'updateMask',updates,'updateCount',sum(updates),'fallbackReason',reason, ...
+    'finalNoisePower',final);
 end
 
 function options=completeOptions(options,defaults)

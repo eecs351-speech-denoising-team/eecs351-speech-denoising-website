@@ -108,8 +108,8 @@ run_denoising_demo;
 Spectral methods use 25 ms periodic Hann windows, 10 ms hops, and a 512-point
 FFT at 16 kHz. A fixed noise spectrum is estimated from the lowest-energy 20%
 of full noisy frames (`noiseFraction=0.2`). Padded boundary frames are excluded
-from that estimate. This is an **offline, untuned** estimator; pause-based
-updates and parameter selection remain later steps. Low-energy speech can
+from that estimate. This is an **offline, untuned** initializer; pause-based
+updates are available as described below. Low-energy speech can
 contaminate the estimate, so these defaults do not establish performance.
 
 All methods return the same length without normalization. FIR delay is already
@@ -122,8 +122,9 @@ when gains are unity. Spectral inputs need at least one full analysis window.
 
 `run_denoising_demo` writes three exploratory clip folders under
 `outputs/denoising_demo/`. Each has `clean.wav`, `identity.wav` (noisy),
-`fir.wav`, `spectral_subtraction.wav`, `wiener.wav`, and `signals.mat`.
-The MAT file retains unscaled double outputs; the five 24-bit WAVs share one
+`fir.wav`, `spectral_subtraction.wav`, `wiener.wav`,
+`spectral_subtraction_updated.wav`, `wiener_updated.wav`, and `signals.mat`.
+The MAT file retains unscaled double outputs; the seven 24-bit WAVs share one
 export gain per utterance to prevent clipping without independent normalization.
 `demo_manifest.json` records parameters, gain, and alignment metadata. Running
 the demo again replaces its generated files. It does not run the held-out set.
@@ -133,6 +134,58 @@ stationary-noise suppression with:
 
 ```sh
 matlab -batch "addpath('code'); r=runtests('tests/test_denoisers.m'); assertSuccess(r);"
+```
+
+## Fixed versus pause-updated noise estimates (step 3)
+
+Both spectral methods accept `noiseMode='fixed'` (the unchanged default) or
+`noiseMode='pause_updated'`. They share the same starting noise spectrum and
+filter parameters, so their difference isolates the noise-update policy.
+
+```matlab
+[fixed, fixedInfo] = denoise_speech(y,fs,'wiener');
+[updated, updatedInfo] = denoise_speech(y,fs,'wiener', ...
+    struct('noiseMode','pause_updated','noiseLambda',0.9));
+run_denoising_demo;
+```
+
+For each recording, let E20 be the largest energy among the lowest-energy 20%
+of original full frames (controlled by `noiseFraction`). A candidate pause
+frame has energy at most `E20 * 10^(pauseThresholdDb/10)`; the default margin
+is 3 dB. Only full, unpadded frames can qualify. Updates start on the third
+consecutive qualifying frame (`minPauseFrames=3`); the first two frames are
+not updated retroactively. A nonqualifying frame resets that counter.
+
+During confirmed candidate pauses, the noise spectrum is updated before applying
+that frame's gain: `Pnoise = lambda*Pnoise + (1-lambda)*Pobserved`, with default
+`noiseLambda=0.9`. Otherwise the state is held, including at padded boundaries.
+The update is applied to the observed noisy spectrum, never a clean signal or
+reference-derived residual. The detector and initializer inspect the whole
+noisy recording, so this remains an offline experiment, not a streaming VAD.
+
+As a conservative fallback, updates are disabled when the 90th-percentile
+frame energy is less than 3 dB above E20 (`minEnergyContrastDb=3`). If no
+candidate run is long enough, the initial fixed estimate is also retained.
+`info.noiseTracking` records frame starts, energies, candidate and update masks,
+threshold, energy contrast, final spectrum, and fallback reason. Set
+`storeNoiseHistory=true` to retain the per-frame noise spectrum for diagnostics;
+this is off by default to keep metadata small. `info.noisePower` continues to
+mean the initial spectrum for compatibility.
+
+The demo compares fixed and updated variants on the three exploratory clips
+using matched export gain. `outputs/denoising_demo/noise_update_summary.csv`
+records candidate/update counts and fallback reasons for all 12 spectral runs.
+The existing `spectral_subtraction.wav` and `wiener.wav` names denote fixed
+estimates; files ending in `_updated.wav` use pause updates.
+
+These are candidate settings to tune on the 400-pair tuning manifest, not
+measured optimal settings. Low-energy speech may be mistaken for noise; a
+fixed energy threshold may miss pauses after the background grows louder.
+Neither this gate nor its fallback proves that a frame contains no speech.
+Final performance comparisons remain on the held-out set after tuning.
+
+```sh
+matlab -batch "addpath('code'); r=runtests('tests/test_noise_updates.m'); assertSuccess(r);"
 ```
 
 ## Website
