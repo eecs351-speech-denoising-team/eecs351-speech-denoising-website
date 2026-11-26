@@ -169,7 +169,7 @@
   <!-- 8 · Tuning -->
   <section class="slide" data-section="Results so far">
     <p class="kicker">05 · Tuning on 400 training pairs</p>
-    <h2>Removing more noise did not make speech more intelligible</h2>
+    <h2>On training data, stronger suppression cost intelligibility</h2>
     <div class="cols cols-tune">
       <figure class="tune-chart" id="tuneChart" aria-label="Scatter plot of 41 tuning candidates: mean SNR change against mean STOI change"></figure>
       <div class="tune-side">
@@ -183,13 +183,39 @@
       </div>
     </div>
     <p class="credit">Each point: mean over 400 training pairs. STOI = classic short-time objective intelligibility (pystoi 0.4.1). Selection rule: highest mean STOI, then ΔSNR. Source: <code>reports/tuning_summary.csv</code>.</p>
-    <aside class="notes">This is our first real result. Each dot is one parameter setting, averaged over all 400 training pairs. Right means more noise removed (higher SNR); up means more intelligible. The cloud slopes down: the harder a method suppresses, the higher the SNR and the lower the STOI. That is exactly the trade-off in our title, now measured. The ringed dots are the settings we froze: the gentlest ones. Their STOI gain over doing nothing is about 0.0002, so on training data none of these classic filters meaningfully improves intelligibility. Pause updating also did not help here. These are training numbers; the held-out evaluation comes next.</aside>
+    <aside class="notes">This is our first real result. Each dot is one parameter setting, averaged over all 400 training pairs. Right means more noise removed (higher SNR); up means more intelligible. The cloud slopes down: the harder a method suppresses, the higher the SNR and the lower the STOI. That is exactly the trade-off in our title, now measured. The ringed dots are the settings we froze: the gentlest ones. Their STOI gain over doing nothing is about 0.0002, so on training data none of these classic filters meaningfully improves intelligibility. Pause updating also did not help here. These are training numbers; next, the frozen settings on held-out recordings.</aside>
   </section>
 
-  <!-- 9 · Demo -->
+  <!-- 9 · Held-out overall -->
+  <section class="slide" data-section="Results">
+    <p class="kicker">06 · Held-out test · 240 pairs never used for tuning</p>
+    <h2>Every method raised SNR; none raised intelligibility</h2>
+    <figure class="fig"><img src="assets/figures/results/heldout-overall.png" alt="Bar charts of mean SNR change and mean STOI change for FIR, spectral subtraction, and Wiener on 240 held-out pairs, with 95% bootstrap intervals. All SNR changes are positive; all STOI changes are slightly negative."></figure>
+    <div class="callouts">
+      <div><b>+4.4 dB · −0.0005</b><span>FIR: biggest SNR gain, smallest<br>STOI loss (ΔSNR · ΔSTOI)</span></div>
+      <div><b>+1.3 dB · −0.0029</b><span>Wiener: the largest STOI loss<br>of the three</span></div>
+      <div class="so"><span>Pause-updated noise estimates removed another 0.4–0.6 dB of noise but lowered STOI again: the same pattern as in tuning.</span></div>
+    </div>
+    <aside class="notes">This is the one-shot evaluation: the frozen settings, applied unchanged to 240 held-out pairs from bus, office and café noise and two new speakers. Nothing was re-tuned after seeing these numbers. Left: every method raises SNR, FIR the most at about 4.4 dB. Right: every method lowers mean STOI slightly; the error bars are 95% bootstrap intervals and none crosses zero. So removing noise did not translate into higher estimated intelligibility. The matched comparison of fixed versus pause-updated noise estimates, which changes only the update rule, shows pause updates remove a bit more noise but cost a bit more intelligibility, for both spectral methods.</aside>
+  </section>
+
+  <!-- 10 · Held-out by condition -->
+  <section class="slide" data-section="Results">
+    <p class="kicker">06 · Held-out test · by noise and SNR</p>
+    <h2>The cost lands on the noisiest recordings</h2>
+    <div class="cond" id="condTable" role="table" aria-label="Mean SNR change and STOI change for each method, noise type and input SNR on the held-out set, 20 files per cell"></div>
+    <div class="callouts">
+      <div class="is-gain"><b>+9.1 · +9.5 dB</b><span>FIR SNR gain on bus · office<br>at 2.5 dB</span></div>
+      <div class="is-loss"><b>−0.0092</b><span>Wiener STOI change on café<br>at 2.5 dB, the worst cell</span></div>
+      <div class="so"><span>Time–frequency gains hurt most at low SNR and in café babble, where noise overlaps speech. At 17.5 dB the STOI changes are close to zero.</span></div>
+    </div>
+    <aside class="notes">Each cell is the mean over 20 held-out files; blue is better than the noisy input, red is worse. Left block: SNR change in dB. Right block: STOI change, scaled by 1000. FIR helps most where the noise is low-frequency and loud: bus and office at 2.5 dB gain over 9 dB. In café, whose noise spreads across the speech band, FIR gains less and even loses SNR at 17.5 dB. The spectral methods lose the most intelligibility at the lowest SNR, worst for Wiener on café at 2.5 dB. That matches the spectral-overlap finding from the start of the talk. Two speakers is too few to claim speaker generalization.</aside>
+  </section>
+
+  <!-- 11 · Demo -->
   <section class="slide slide-demo" id="demo" data-section="Demo">
     <div class="demo-head">
-      <div><p class="kicker">06 · Live demo</p><h2>Hear the trade-off</h2></div>
+      <div><p class="kicker">07 · Live demo</p><h2>Hear the trade-off</h2></div>
       <p class="demo-hint">Click a spectrogram to play from that point · <kbd>1</kbd> noisy <kbd>2</kbd> output <kbd>3</kbd> clean · <kbd>Space</kbd> play / stop</p>
     </div>
     <div class="demo">
@@ -221,16 +247,16 @@
 
   <!-- 9 · Status -->
   <section class="slide" data-section="Progress">
-    <p class="kicker">07 · Where we are</p>
-    <h2>Settings are frozen; the held-out test is next</h2>
+    <p class="kicker">08 · Where we are</p>
+    <h2>Objective results are in; listening is next</h2>
     <div class="cols cols-status">
       <div>
         <p class="label">Done</p>
         <ul class="check">
           <li><b>Reproducible data setup.</b> One script fetches and CRC-checks the 643 selected pairs; MATLAB validates sample rate, length, and resampling.</li>
-          <li><b>Frozen splits.</b> 400 tuning and 240 held-out pairs, balanced by condition and speaker, committed as manifests.</li>
           <li><b>Three denoisers + pause-updated noise tracking</b>, unit-tested, behind one interface.</li>
           <li><b>Training-only tuning, then freeze.</b> 41 predeclared candidates scored on all 400 tuning pairs; winners and provenance recorded.</li>
+          <li><b>One-shot held-out evaluation.</b> 8 predeclared variants × 240 pairs = 1,920 scored rows; no file dropped, nothing re-tuned.</li>
         </ul>
       </div>
       <div>
@@ -239,39 +265,39 @@
           <li><b>Same samples for every method</b><span>Every output and baseline is scored on samples 65 through N − 64; no extra shifting, gain fitting, or normalization.</span></li>
           <li><b>Same loudness when listening</b><span>One export gain per utterance, never per-method normalization.</span></li>
           <li><b>One pinned metric</b><span>Classic STOI (intelligibility estimate) from the same implementation on every machine; SNR change as a secondary measure.</span></li>
-          <li><b>No peeking</b><span>Tuning never loaded held-out audio. Frozen settings are hash-checked before they are applied.</span></li>
+          <li><b>No peeking</b><span>Tuning never loaded held-out audio; settings were frozen and hash-checked before the held-out run.</span></li>
         </ul>
       </div>
     </div>
-    <aside class="notes">Status: data, methods, and tuning are done; settings are frozen. We deliberately have not touched the 240 held-out pairs yet. The right column is what makes the final numbers trustworthy: same samples, same metric, no peeking.</aside>
+    <aside class="notes">Status: data, methods, tuning, and the held-out evaluation are done. The right column is why the held-out numbers are trustworthy: same samples, same metric, and the settings were frozen before we ever scored the 240 held-out pairs.</aside>
   </section>
 
   <!-- 10 · Plan -->
   <section class="slide" data-section="Plan">
-    <p class="kicker">08 · What's left</p>
-    <h2>One evaluation, then the write-up</h2>
+    <p class="kicker">09 · What's left</p>
+    <h2>A listening test, then the write-up</h2>
     <div class="timeline">
-      <article class="is-done"><span class="when">Done</span><h3>Implement and verify</h3><p>Unprocessed reference, FIR, spectral subtraction, Wiener, and pause-updated noise tracking, verified on exploratory clips.</p></article>
-      <article class="is-done"><span class="when">Done</span><h3>Tune, then freeze</h3><p>41 candidates on the <b>400 tuning pairs</b>, chosen by mean STOI, then SNR change. Settings frozen and hash-checked.</p></article>
-      <article><span class="when">Next</span><h3>Evaluate once</h3><p>Run the frozen settings on the <b>240 held-out pairs</b>. Report by noise type, SNR, and speaker; fixed versus pause-updated side by side.</p></article>
-      <article><span class="when">Final report</span><h3>Listen and document</h3><p>Listening review of the matched-level exports, and where stronger suppression starts to damage speech.</p></article>
+      <article class="is-done"><span class="when">Done</span><h3>Implement and tune</h3><p>Three denoisers plus pause-updated noise tracking; 41 candidates on the <b>400 tuning pairs</b>, then frozen.</p></article>
+      <article class="is-done"><span class="when">Done</span><h3>Evaluate once</h3><p>Frozen settings on the <b>240 held-out pairs</b>, by noise type, SNR, and speaker; fixed versus pause-updated side by side.</p></article>
+      <article><span class="when">Next</span><h3>Blind listening test</h3><p>6 trials × 4 unlabeled systems at 2.5 dB, rated for noise, naturalness, intelligibility, and quality. Materials are ready; ratings are not in yet.</p></article>
+      <article><span class="when">Final report</span><h3>Document the trade-off</h3><p>Combine objective scores and ratings: where suppression helps, and where it starts to damage speech.</p></article>
     </div>
     <p class="stretch"><b>If time permits</b> LMS / NLMS adaptive filtering on a controlled mixture with a separate noise reference. It needs a second input our dataset does not provide, so it would be reported separately.</p>
-    <aside class="notes">Two steps are done. What remains: run the frozen settings once on the 240 held-out pairs, then listen and write up. The open question: does the training-set picture (tiny STOI change, pause updates not helping) hold on unseen bus, office, and café recordings? Mention LMS/NLMS as a stretch goal only.</aside>
+    <aside class="notes">Implementation, tuning, and the held-out evaluation are done. Next is a small blind listening test: six trials at 2.5 dB covering every noise and speaker, each with the clean reference and the four systems under shuffled labels. No ratings have been collected yet, so we make no claim about perceived quality. STOI is only an estimate; the listening test checks whether people hear the same trade-off. Mention LMS/NLMS as a stretch goal only.</aside>
   </section>
 
   <!-- 11 · Close -->
   <section class="slide slide-close" data-section="Wrap-up">
     <p class="kicker">Takeaway</p>
-    <h2>A noise estimate has a time scale</h2>
-    <p class="big">A whole-recording spectrum tells us <em>where</em> the noise sits. Short-time analysis also tells us <em>when</em> it changes, and that is what a time–frequency filter can act on.</p>
+    <h2>Removing noise is not the same as recovering speech</h2>
+    <p class="big">On held-out recordings every method raised SNR, yet estimated intelligibility dropped slightly. Where noise and speech <em>overlap</em>, a single-microphone filter cannot take one without the other.</p>
     <div class="close-grid">
-      <div><b>What we'll be able to say</b><span>For bus, office, and café noise: how much each method improves intelligibility, and what it costs the voice.</span></div>
-      <div><b>What surprised us</b><span>On training data, extra suppression raised SNR but not intelligibility, and pause updates did not beat a fixed estimate.</span></div>
+      <div><b>What we can say</b><span>A gentle FIR band-pass gave the most SNR for the least STOI loss; time–frequency gains cost the most at low SNR and in café noise.</span></div>
+      <div><b>What surprised us</b><span>Updating the noise estimate during pauses removed more noise but lowered intelligibility, on both training and held-out data.</span></div>
     </div>
     <p class="thanks">Thank you. Questions?</p>
     <p class="links">eecs351-speech-denoising-team.github.io/eecs351-speech-denoising-website</p>
-    <aside class="notes">Close with the one idea to remember, then invite questions. If asked "which method is best": on training data the differences in STOI are tiny; the held-out evaluation decides, per noise type.</aside>
+    <aside class="notes">Close with the one idea to remember, then invite questions. If asked "which method is best": by STOI none beats doing nothing; FIR loses least while removing the most noise. The STOI differences are small, and the listening test will tell whether people hear them.</aside>
   </section>
 
   <footer class="chrome">
@@ -280,7 +306,7 @@
     <div class="chrome-right">
       <button id="timer" class="timer" title="Start / pause the 10-minute timer (T). Shift-click to reset.">10:00</button>
       <button id="prev" aria-label="Previous slide">‹</button>
-      <span id="counter" class="counter">1 / 12</span>
+      <span id="counter" class="counter">1 / 14</span>
       <button id="next" aria-label="Next slide">›</button>
     </div>
   </footer>
@@ -293,6 +319,7 @@
 
 <script src="assets/presentation/clips.js"></script>
 <script src="assets/presentation/tuning.js"></script>
+<script src="assets/presentation/evaluation.js"></script>
 <script src="assets/presentation/dsp.js"></script>
 <script src="assets/presentation/presentation.js"></script>
 </body>

@@ -1,9 +1,10 @@
 """Embed the demo audio and tuning results used by presentation.html.
 
-Writes assets/presentation/clips.js (the three exploratory pairs at 16 kHz) and
+Writes assets/presentation/clips.js (the three exploratory pairs at 16 kHz),
 assets/presentation/tuning.js (reports/tuning_summary.csv plus the frozen
-primary selections), so the page also works from file:// where browsers block
-fetch() of local files. Both signals of a pair use the
+primary selections) and assets/presentation/evaluation.js (held-out primary
+results by noise and SNR), so the page also works from file:// where browsers
+block fetch() of local files. Both signals of a pair use the
 same polyphase filter as MATLAB resample(x,1,3): 61 taps, Kaiser beta 5.
 Samples keep audioread scaling (int16 / 32768) and are stored as float32.
 """
@@ -50,9 +51,20 @@ def tuning():
     return {"status": frozen["status"], "primary": frozen["primary"], "candidates": rows}
 
 
+def evaluation():
+    with open(ROOT / "reports/evaluation/by_condition.csv", newline="") as f:
+        cells = [{"method": r["method"], "noise": r["noise"], "snr": float(r["nominal_snr_db"]),
+                  "pairs": int(r["pairs"]), "dSnr": float(r["mean_delta_snr_db"]),
+                  "dStoi": float(r["mean_delta_stoi"])}
+                 for r in csv.DictReader(f) if r["role"] == "primary" and r["method"] != "identity"]
+    return {"cells": cells}
+
+
 def main():
     write_js(ROOT / "assets/presentation/tuning.js", "PRESENTATION_TUNING", tuning(),
              "reports/tuning_summary.csv and config/frozen_denoisers.json")
+    write_js(ROOT / "assets/presentation/evaluation.js", "PRESENTATION_EVALUATION", evaluation(),
+             "reports/evaluation/by_condition.csv")
     clips = {}
     for condition, name in CLIPS:
         clean = read_wav(ROOT / "assets/audio/clean" / f"{name}.wav")

@@ -277,6 +277,44 @@
     fig.appendChild(legend);
   }
 
+  // ---------- Held-out results by condition ----------
+  // Diverging fill: blue = better than the noisy input, red = worse, gray midpoint.
+  function diverging(v, max) {
+    const t = Math.min(1, Math.abs(v) / max), pole = v >= 0 ? [42, 120, 214] : [208, 69, 43], mid = [242, 244, 246];
+    const rgb = mid.map((m, i) => Math.round(m + (pole[i] - m) * t));
+    return { fill: 'rgb(' + rgb.join(',') + ')', ink: t > 0.55 ? '#fff' : '#142534' };
+  }
+
+  function drawConditions() {
+    const box = $('#condTable'), cells = (window.PRESENTATION_EVALUATION || {}).cells || [];
+    if (!box || !cells.length) return;
+    const methods = [['fir', 'FIR filter'], ['spectral_subtraction', 'Spectral subtraction'], ['wiener', 'Wiener gain']];
+    const noises = [['bus', 'Bus'], ['office', 'Office'], ['cafe', 'Café']], snrs = [2.5, 7.5, 12.5, 17.5];
+    const find = (m, n, s) => cells.find((c) => c.method === m && c.noise === n && c.snr === s);
+    const sign = (v, d) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+    let html = '<div class="cond-h cond-span" style="grid-column:3/7">SNR change (dB)</div>' +
+      '<div class="cond-h cond-span" style="grid-column:8/12">STOI change (× 0.001)</div>' +
+      '<div class="cond-h cond-in" style="grid-column:1/3">Input SNR (dB)</div>' +
+      snrs.map((s, i) => '<div class="cond-h" style="grid-column:' + (3 + i) + '">' + s + '</div>').join('') +
+      snrs.map((s, i) => '<div class="cond-h" style="grid-column:' + (8 + i) + '">' + s + '</div>').join('');
+    methods.forEach(([m, label], mi) => {
+      const row0 = 3 + mi * 3;
+      html += '<div class="cond-m" style="grid-row:' + row0 + '/' + (row0 + 3) + '">' + label + '</div>';
+      noises.forEach(([n, nl], ni) => {
+        const r = row0 + ni;
+        html += '<div class="cond-n" style="grid-row:' + r + '">' + nl + '</div>';
+        snrs.forEach((s, si) => {
+          const c = find(m, n, s);
+          if (!c) return;
+          const a = diverging(c.dSnr, 10), b = diverging(c.dStoi * 1000, 10);
+          html += '<div class="cond-c" role="cell" style="grid-row:' + r + ';grid-column:' + (3 + si) + ';background:' + a.fill + ';color:' + a.ink + '">' + sign(c.dSnr, 2) + '</div>';
+          html += '<div class="cond-c" role="cell" style="grid-row:' + r + ';grid-column:' + (8 + si) + ';background:' + b.fill + ';color:' + b.ink + '">' + sign(c.dStoi * 1000, 2) + '</div>';
+        });
+      });
+    });
+    box.innerHTML = html;
+  }
+
   // ---------- Demo ----------
   // Demo defaults are the frozen training-set selections (config/frozen_denoisers.json).
   const TUNING = window.PRESENTATION_TUNING || { primary: {}, candidates: [] };
@@ -547,7 +585,7 @@
   });
 
   addEventListener('resize', fit);
-  fit(); drawStatic(); drawTuning(); Timer.draw();
+  fit(); drawStatic(); drawTuning(); drawConditions(); Timer.draw();
   go((parseInt(location.hash.slice(1), 10) || 1) - 1);
   window.Presentation = { go, Demo, Player };
 })();
