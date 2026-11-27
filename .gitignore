@@ -18,3 +18,5 @@ data/*
 !assets/audio/noisy/p257_004.wav
 !assets/audio/noisy/p257_009.wav
 !assets/audio/noisy/p257_017.wav
+!assets/audio/results/
+!assets/audio/results/*.wav

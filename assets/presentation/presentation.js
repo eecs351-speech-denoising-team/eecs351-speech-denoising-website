@@ -75,7 +75,7 @@
 
   // ---------- Timer (10 minutes, warning at 2 minutes left) ----------
   const Timer = {
-    el: $('#timer'), limit: 600, elapsed: 0, started: 0, id: 0,
+    el: $('#timer'), limit: 420, elapsed: 0, started: 0, id: 0,
     toggle() {
       if (this.id) { this.elapsed = this.now(); clearInterval(this.id); this.id = 0; }
       else { this.started = performance.now() - this.elapsed * 1000; this.id = setInterval(() => this.draw(), 250); }
@@ -162,9 +162,16 @@
   }
 
   // ---------- Title and data slides ----------
+  const TITLE_CLIP = 'cafe';
   function drawStatic() {
-    if (!CLIPS.bus) return;
-    drawWave($('#titleWave'), [{ x: CLIPS.bus.noisy, color: '#b9c3cd' }, { x: CLIPS.bus.clean, color: '#1d5987' }]);
+    if (!CLIPS.bus || !$('#titleSpecNoisy')) return; // title now uses pre-rendered images
+    // Title: the same clip as three spectrograms (noisy, frozen Wiener output, clean).
+    const t = CLIPS[TITLE_CLIP] || CLIPS.bus;
+    const wiener = DSP.denoise(t.noisy, t.fs, 'wiener', frozenOptions('wiener')).output;
+    [['#titleSpecNoisy', t.noisy], ['#titleSpecOut', wiener], ['#titleSpecClean', t.clean]].forEach(([id, x]) => {
+      const S = DSP.stft(x, t.fs);
+      drawTF($(id), S, spectrogramValue(S));
+    });
     $$('.clip-card').forEach((card) => {
       const c = CLIPS[card.dataset.clip];
       drawWave($('canvas', card), [{ x: c.noisy, color: '#c3ccd5' }, { x: c.clean, color: '#1d5987' }]);
@@ -286,9 +293,11 @@
   };
   const DEFAULTS = Object.assign(
     { cutoffHz: 100, upperCutoffHz: 7000, alpha: 1, beta: 0.01, gainFloor: 0.05, noiseFraction: 0.1,
-      noiseMode: 'fixed', noiseLambda: 0.9, pauseThresholdDb: 3 },
+      noiseMode: 'fixed', noiseLambda: 0.9, pauseThresholdDb: 3, ddAlpha: 0.98, xiMinDb: -25 },
     frozenOptions('fir'), frozenOptions('spectral_subtraction'), frozenOptions('wiener'));
-  if (Array.isArray(DEFAULTS.upperCutoffHz)) DEFAULTS.upperCutoffHz = 0; // MATLAB [] means high-pass
+  // FIR uses the ITU-T G.722 wideband speech band (50–7000 Hz), not a tuned setting.
+  // Order 512 is needed for a real 50 Hz edge at 16 kHz (order 128 gives only −4.6 dB at DC).
+  Object.assign(DEFAULTS, { cutoffHz: 50, upperCutoffHz: 7000, firOrder: 512 });
   const SLIDERS = {
     cutoffHz: { label: 'Lower cutoff', min: 50, max: 1500, step: 10, fmt: (v) => v + ' Hz' },
     noiseFraction: { label: 'Noise frames used', min: 0.05, max: 0.5, step: 0.05, fmt: (v) => Math.round(v * 100) + '% quietest' },
@@ -296,9 +305,11 @@
     beta: { label: 'Noise floor β', min: 0, max: 0.3, step: 0.005, fmt: (v) => v.toFixed(3) },
     gainFloor: { label: 'Gain floor', min: 0, max: 0.5, step: 0.01, fmt: (v) => v.toFixed(2) },
     noiseLambda: { label: 'Smoothing λ', min: 0.5, max: 0.99, step: 0.01, fmt: (v) => v.toFixed(2) },
+    ddAlpha: { label: 'SNR smoothing', min: 0, max: 0.995, step: 0.005, fmt: (v) => v.toFixed(3) },
+    xiMinDb: { label: 'SNR floor', min: -40, max: 0, step: 1, fmt: (v) => v + ' dB' },
     pauseThresholdDb: { label: 'Pause margin', min: 0, max: 10, step: 0.5, fmt: (v) => v.toFixed(1) + ' dB' },
   };
-  const METHOD_LABEL = { identity: 'Unprocessed', fir: 'FIR output', spectral_subtraction: 'Spectral subtraction output', wiener: 'Wiener output' };
+  const METHOD_LABEL = { identity: 'Unprocessed', fir: 'FIR output', spectral_subtraction: 'Spectral subtraction output', wiener: 'Basic Wiener output', wiener_dd: 'Standard Wiener output' };
   const REASONS = { 'insufficient-energy-contrast': 'updates off: too little energy contrast', 'no-confirmed-pause': 'no confirmed pause: initial estimate kept' };
 
   const Demo = {
@@ -372,6 +383,7 @@
       if (m === 'fir') { slider('cutoffHz'); choice('Upper cutoff', 'upperCutoffHz', [[7000, '7 kHz'], [0, 'None']]); }
       if (m === 'spectral_subtraction') { slider('alpha'); slider('beta'); }
       if (m === 'wiener') slider('gainFloor');
+      if (m === 'wiener_dd') { slider('ddAlpha'); slider('xiMinDb'); slider('noiseFraction'); }
       if (spectral) {
         slider('noiseFraction');
         choice('Noise estimate', 'noiseMode', [['fixed', 'Fixed'], ['pause_updated', 'Pause-updated']]);
@@ -410,16 +422,17 @@
     update() {
       const d = this.data(), p = this.p, m = this.method;
       const noise = { noiseFraction: p.noiseFraction, noiseMode: p.noiseMode, noiseLambda: p.noiseLambda, pauseThresholdDb: p.pauseThresholdDb };
-      const options = m === 'fir' ? { cutoffHz: p.cutoffHz, upperCutoffHz: p.upperCutoffHz }
+      const options = m === 'fir' ? { order: p.firOrder, cutoffHz: p.cutoffHz, upperCutoffHz: p.upperCutoffHz }
         : m === 'spectral_subtraction' ? Object.assign({ alpha: p.alpha, beta: p.beta }, noise)
-        : m === 'wiener' ? Object.assign({ gainFloor: p.gainFloor }, noise) : {};
+        : m === 'wiener' ? Object.assign({ gainFloor: p.gainFloor }, noise)
+        : m === 'wiener_dd' ? { ddAlpha: p.ddAlpha, xiMinDb: p.xiMinDb, noiseFraction: p.noiseFraction } : {};
       const r = DSP.denoise(d.noisy, d.fs, m, options);
       this.out = Float32Array.from(r.output); this.info = r.info;
       this.outSpec = DSP.stft(this.out, d.fs);
       $('#outLabel').textContent = METHOD_LABEL[m];
 
-      // Score every method on the samples the FIR filter fully supports.
-      const lo = 64, hi = d.noisy.length - 65;
+      // Score every method on the samples the default FIR filter fully supports.
+      const margin = DEFAULTS.firOrder / 2, lo = margin, hi = d.noisy.length - 1 - margin;
       const a = snrDb(d.noisy, d.clean, lo, hi), b = snrDb(this.out, d.clean, lo, hi);
       $('#mIn').textContent = a.toFixed(1) + ' dB';
       $('#mOut').textContent = b.toFixed(1) + ' dB';
@@ -550,4 +563,25 @@
   fit(); drawStatic(); drawTuning(); Timer.draw();
   go((parseInt(location.hash.slice(1), 10) || 1) - 1);
   window.Presentation = { go, Demo, Player };
+})();
+
+// Results audio buttons: one clip at a time; click again to stop.
+(function () {
+  let current = null, currentBtn = null;
+  const setIcon = (btn, icon) => { const p = btn.querySelector('.pbtn'); (p || btn).textContent = icon; };
+  const stop = () => {
+    if (current) { current.pause(); current = null; }
+    if (currentBtn) { currentBtn.classList.remove('is-playing'); setIcon(currentBtn, '▶'); currentBtn = null; }
+  };
+  document.querySelectorAll('.aplay').forEach((btn) => btn.addEventListener('click', () => {
+    const same = currentBtn === btn;
+    stop();
+    if (same) return;
+    current = new Audio(btn.dataset.src);
+    currentBtn = btn;
+    btn.classList.add('is-playing'); setIcon(btn, '■');
+    current.addEventListener('ended', stop);
+    current.play();
+  }));
+  document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') stop(); });
 })();

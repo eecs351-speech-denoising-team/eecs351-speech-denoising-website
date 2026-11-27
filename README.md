@@ -5,6 +5,87 @@ University of Michigan · Fall 2026
 
 Members: Dayong Fang, Leyu Jiang, Jingyu Liu, Siqi Gong.
 
+## Final study: learned-α Wiener filter and presentation
+
+The final project compares three methods on the full VoiceBank–DEMAND test set:
+
+1. **FIR band-pass** filter, 50–7,000 Hz (ITU-T G.722 wideband band), order 512.
+2. **Wiener filter** with the decision-directed SNR estimate (smoothing α = 0.98, or one tuned α).
+3. **Ours:** the same Wiener filter, with α chosen per time–frequency bin by a small GRU
+   (2 layers, 128 units, 0.3 M parameters). Everything else in the filter is unchanged.
+
+Results on all 824 test pairs (2 unseen speakers, 5 unseen noise types):
+
+| System | PESQ | STOI | SSNR (dB) |
+|---|---:|---:|---:|
+| Noisy input | 1.974 | 0.925 | 1.79 |
+| FIR band-pass | 2.045 | 0.925 | 6.37 |
+| Wiener, α = 0.98 | 2.159 | 0.904 | 6.13 |
+| Wiener, α = 0.9 (tuned) | 2.251 | 0.918 | 5.00 |
+| **Wiener, learned α** | **2.280** | **0.927** | **8.04** |
+
+Methods, statistics, the limitation (background talkers) and next steps are in the study
+report, [`reports/learned_alpha/README.md`](reports/learned_alpha/README.md).
+
+### Presentation
+
+`presentation.html` is the 7-minute deck (10 slides: Project, Data, Progress, Next Steps).
+Serve the folder and open it, because the audio is loaded from files:
+
+```sh
+python3 -m http.server 8351
+# open http://localhost:8351/presentation.html
+```
+
+Keys: arrows to move, `N` speaker notes, `T` 7-minute timer, `F` fullscreen. Click a
+spectrogram on the problem and audio slides to play it. Figures are in
+`assets/figures/slides/`, audio in `assets/audio/results/`; regenerate both with
+`code/make_slide_figures.py` and `code/make_listening_preview.py`.
+
+### Run the study
+
+Requires Python 3.13 (the pinned NumPy/SciPy do not support 3.14) and about 12 GB of disk.
+
+```sh
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements.txt pesq soundfile torch
+```
+
+Put the official archives in `data/archives/` (5.6 GB in total, from the
+[University of Edinburgh record](https://datashare.ed.ac.uk/items/6ed35425-bf14-4d2b-93a1-0a4984952757)):
+`clean_trainset_28spk_wav.zip`, `noisy_trainset_28spk_wav.zip`, `clean_testset_wav.zip`,
+`noisy_testset_wav.zip` and `logfiles.zip`. Then run everything in order:
+
+```sh
+./code/run_learned_alpha.sh
+```
+
+It decodes and caches the audio at 16 kHz, tunes the single α on the 400 tuning pairs, trains
+the network for 20 epochs (about 45 minutes on a laptop CPU), and scores all systems on the
+824 test pairs once. Every selection rule is fixed in the script before the test set is used.
+
+The trained model is committed as `models/learned_alpha.pt`, so figures, audio and analyses
+can be reproduced without retraining. Scripts use a freshly trained
+`outputs/learned_alpha/best.pt` when it exists and the committed model otherwise.
+
+| File | Purpose |
+|---|---|
+| `code/dsp.py` | NumPy FIR and DD Wiener; matches the MATLAB versions to about 1e-15 |
+| `code/denoise_wiener_dd.m`, `tests/test_wiener_dd.m` | MATLAB DD Wiener and its tests |
+| `code/learned_alpha.py` | GRU model, differentiable DD recursion, training, inference |
+| `code/quality_metrics.py` | PESQ (wideband), STOI, segmental SNR, SI-SDR |
+| `code/prepare_corpus.py` | Decode the archives into the 16 kHz cache |
+| `code/run_study.py` | α tuning (`tune-alpha`) and test scoring (`evaluate`) |
+| `code/run_learned_alpha.sh` | The whole study in one command |
+| `code/sweep_suppression.py` | Inference-time suppression settings (validation speakers) |
+| `code/noise_type_analysis.py` | Residual noise by noise type (validation speakers) |
+| `code/make_slide_figures.py` | All presentation figures |
+| `code/make_listening_preview.py`, `code/make_cleaner_preview.py` | Listening pages in `outputs/` |
+| `reports/learned_alpha/` | Result tables and the study report |
+
+The sections below document the earlier pipeline (MATLAB denoisers, 240-pair held-out set,
+STOI-based tuning) and are unchanged.
+
 ## Local experiment setup (step 1)
 
 Requirements: MATLAB R2024a or later with Signal Processing Toolbox, Python

@@ -59,7 +59,8 @@
 
   function magnitudeResponse(b, K) {
     const re = new Float64Array(K), im = new Float64Array(K);
-    re.set(b);
+    // Fold taps beyond K (time aliasing): the K-point DFT is still exact at its K bins.
+    for (let i = 0; i < b.length; i++) re[i % K] += b[i];
     fft(re, im, false);
     const out = new Float64Array(K / 2 + 1);
     for (let k = 0; k <= K / 2; k++) out[k] = Math.hypot(re[k], im[k]);
@@ -121,7 +122,10 @@
 
     const o = Object.assign({ noiseFraction: 0.2, noiseMode: 'fixed', noiseLambda: 0.9,
       pauseThresholdDb: 3, minPauseFrames: 3, minEnergyContrastDb: 3,
-      alpha: 1, beta: 0.01, gainFloor: 0.05 }, options);
+      alpha: 1, beta: 0.01, gainFloor: 0.05, ddAlpha: 0.98, xiMinDb: -25 }, options);
+    // Decision-directed Wiener (code/denoise_wiener_dd.m) always uses the fixed noise estimate.
+    const dd = method === 'wiener_dd';
+    if (dd) o.noiseMode = 'fixed';
     const S = stft(y, fs, o);
     const { L, hop, K, B, F, w } = S;
 
@@ -173,6 +177,7 @@
     const state = Float64Array.from(noisePower);
     const paddedOut = new Float64Array(S.paddedLength), weights = new Float64Array(S.paddedLength);
     const subtraction = method === 'spectral_subtraction';
+    const xiMin = Math.pow(10, o.xiMinDb / 10), previous = new Float64Array(B); // |S_hat(m-1)|^2
     for (let k = 0; k < F; k++) {
       if (updates[k]) { // update before applying this frame's gain
         for (let b = 0; b < B; b++) state[b] = o.noiseLambda * state[b] + (1 - o.noiseLambda) * S.power[k * B + b];
@@ -185,6 +190,12 @@
           const speech = Math.max(P - o.alpha * N, o.beta * N);
           if (P > 0) { g = Math.sqrt(speech / P); re *= g; im *= g; }
           else { g = 0; re = Math.sqrt(speech); im = 0; }
+        } else if (dd) {
+          const Ns = Math.max(N, Number.MIN_VALUE), gamma = P / Ns;
+          const xi = Math.max(o.ddAlpha * previous[b] / Ns + (1 - o.ddAlpha) * Math.max(gamma - 1, 0), xiMin);
+          g = xi / (1 + xi);
+          previous[b] = g * g * P;
+          re *= g; im *= g;
         } else {
           const speech = Math.max(P - N, 0), den = speech + N;
           g = Math.max(o.gainFloor, speech / (den === 0 ? 1 : den));

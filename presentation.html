@@ -12,273 +12,209 @@
   <div class="progress"><i id="progressBar"></i></div>
 
   <!-- 1 · Title -->
-  <section class="slide slide-title" data-section="Introduction">
-    <p class="kicker">EECS 351 · Fall 2026 · Project presentation</p>
-    <h1>How much noise can we remove <em>without losing speech?</em></h1>
-    <p class="lede">Speech Denoising Using Time–Frequency Filtering</p>
-    <p class="members">Dayong Fang · Leyu Jiang · Jingyu Liu · Siqi Gong</p>
-    <div class="title-wave">
-      <canvas id="titleWave" width="2272" height="360"></canvas>
-      <div class="legend"><span class="key key-noisy"></span>Noisy recording <span class="key key-clean"></span>Clean speech <span class="legend-note">bus example, 3.6 s</span></div>
+  <section class="slide slide-title" data-section="Title">
+    <p class="title-org">EECS 351 · Digital Signal Processing · Fall 2026</p>
+    <h1>Speech Denoising Using<br>Time–Frequency Filtering</h1>
+    <div class="title-rule"></div>
+    <p class="members">Group 11 &nbsp;·&nbsp; Dayong Fang &nbsp;·&nbsp; Leyu Jiang &nbsp;·&nbsp; Jingyu Liu &nbsp;·&nbsp; Siqi Gong</p>
+    <div class="title-trio" aria-label="Spectrograms of one bus recording: noisy, our method, clean">
+      <figure><img src="assets/figures/results-v2/bus_noisy.png" alt="Noisy spectrogram"><figcaption>Noisy recording</figcaption></figure>
+      <i>→</i>
+      <figure class="is-ours"><img src="assets/figures/results-v2/bus_learned.png" alt="Spectrogram after our method"><figcaption>Our method</figcaption></figure>
+      <figure class="ref-fig"><img src="assets/figures/results-v2/bus_clean.png" alt="Clean spectrogram"><figcaption>Clean reference</figcaption></figure>
     </div>
-    <aside class="notes">Introduce the team. One sentence: we take a single-microphone recording with background noise and ask how far we can suppress the noise before the voice itself is damaged. The waveform is a real clip from our data: grey is what the microphone heard, blue is the speech we want back.</aside>
+    <aside class="notes">Introduce the team. The three spectrograms are one bus recording: what the microphone heard, the output of our method, and the clean speech for reference.</aside>
   </section>
 
-  <!-- 2 · Idea -->
-  <section class="slide" data-section="Introduction">
-    <p class="kicker">01 · The idea</p>
-    <h2>Turning the noise down also turns the voice down</h2>
-    <div class="cols cols-idea">
-      <div>
-        <p class="big">You replay a lecture or an online meeting and the speaker is buried under a bus engine, an air conditioner, or café chatter.</p>
-        <p>A denoiser only gets the noisy recording. Whatever it removes, it removes from speech and noise together wherever they overlap.</p>
-        <p class="question"><strong>Our question:</strong> how does that trade-off change with the <b>type of noise</b> and the <b>strength of the filter</b>?</p>
-      </div>
-      <div class="model">
-        <div class="model-row">
-          <div class="chip chip-noisy"><span class="math">y[n]</span><small>noisy recording<br>the only input</small></div>
-          <span class="op">=</span>
-          <div class="chip chip-clean"><span class="math">s[n]</span><small>clean speech<br>what we want</small></div>
-          <span class="op">+</span>
-          <div class="chip chip-noise"><span class="math">v[n]</span><small>background<br>noise</small></div>
-        </div>
-        <div class="tradeoff">
-          <div class="tradeoff-bar"><span>gentle</span><i></i><span>aggressive</span></div>
-          <div class="tradeoff-ends">
-            <p><b>Too little suppression</b>Noise is still there between and under the words.</p>
-            <p><b>Too much suppression</b>Quiet consonants disappear; isolated tones are left behind.</p>
-          </div>
-        </div>
-      </div>
+  <!-- 2 · Project -->
+  <section class="slide" data-section="Project">
+    <header class="shead"><h2>The Denoising Problem</h2><nav class="crumb"><span class="on">Project</span><span>Data</span><span>Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="eqrow">
+      <figure><button class="aplay thumb" data-src="assets/audio/results/bus_clean.wav" aria-label="Play clean speech"><img src="assets/figures/slides/intro_clean.png" alt="Clean speech spectrogram"><span class="pbtn">▶</span></button><figcaption><span class="m">s[n]</span> clean speech</figcaption></figure>
+      <span class="op">+</span>
+      <figure><button class="aplay thumb" data-src="assets/audio/results/bus_noise.wav" aria-label="Play background noise"><img src="assets/figures/slides/intro_noise.png" alt="Noise spectrogram"><span class="pbtn">▶</span></button><figcaption><span class="m">v[n]</span> background noise</figcaption></figure>
+      <span class="op">=</span>
+      <figure><button class="aplay thumb" data-src="assets/audio/results/bus_noisy.wav" aria-label="Play noisy recording"><img src="assets/figures/slides/intro_noisy.png" alt="Noisy recording spectrogram"><span class="pbtn">▶</span></button><figcaption><span class="m">y[n]</span> what we record</figcaption></figure>
     </div>
-    <aside class="notes">Motivate with an everyday situation. Emphasize the constraint: one microphone, no separate noise reference. The signal model y = s + v is all we assume. Then state the research question: trade-off versus noise type and filter strength.</aside>
+    <div class="two two-boxes">
+      <div class="box"><b>Goal</b><p>From <span class="m">y[n]</span> alone, remove the noise <em>and</em> keep the original voice.</p></div>
+      <div class="box"><b>Challenge</b><p>Speech and noise overlap in time and frequency. Too little suppression leaves noise; too much removes quiet sounds and word beginnings.</p></div>
+    </div>
+    </div>
+    <aside class="notes">~40 s. A bus recording as an example: clean speech plus bus noise gives what the microphone records. We only have y. Denoising is not only removing noise: if we remove too much, the voice itself is damaged. Every method has to balance the two.</aside>
   </section>
 
   <!-- 3 · Data -->
   <section class="slide" data-section="Data">
-    <p class="kicker">02 · Data</p>
-    <h2>The same words, with and without noise</h2>
-    <div class="cols cols-data">
+    <header class="shead"><h2>Data: VoiceBank–DEMAND</h2><nav class="crumb"><span>Project</span><span class="on">Data</span><span>Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="two two-data">
       <div>
-        <p><strong>VoiceBank–DEMAND</strong> paired speech: every noisy recording comes with the clean recording of the same utterance, so we can measure how much of the voice each method keeps.</p>
-        <ul class="facts">
-          <li><b>48 kHz → 16 kHz mono</b>, clean and noisy resampled together, relative levels preserved</li>
-          <li><b>Clean reference is never a denoiser input.</b> It is used only for scoring and diagnostics</li>
-        </ul>
-        <div class="stats">
-          <div><b>400</b><span>tuning pairs<br>10 noise types × 4 SNRs</span></div>
-          <div><b>240</b><span>held-out pairs<br>bus, office, café × 4 SNRs</span></div>
-          <div><b>3</b><span>exploratory clips<br>used on these slides</span></div>
-        </div>
-      </div>
-      <div class="listen">
-        <p class="label">Listen · nominal SNR 2.5 dB</p>
-        <div class="clip-card" data-clip="bus"><div class="clip-head"><b>Bus</b><span>3.63 s</span></div><canvas width="560" height="88"></canvas>
-          <div class="clip-buttons"><button class="play" data-clip="bus" data-track="noisy">Noisy</button><button class="play play-clean" data-clip="bus" data-track="clean">Clean</button></div></div>
-        <div class="clip-card" data-clip="office"><div class="clip-head"><b>Office</b><span>2.87 s</span></div><canvas width="560" height="88"></canvas>
-          <div class="clip-buttons"><button class="play" data-clip="office" data-track="noisy">Noisy</button><button class="play play-clean" data-clip="office" data-track="clean">Clean</button></div></div>
-        <div class="clip-card" data-clip="cafe"><div class="clip-head"><b>Café</b><span>3.45 s</span></div><canvas width="560" height="88"></canvas>
-          <div class="clip-buttons"><button class="play" data-clip="cafe" data-track="noisy">Noisy</button><button class="play play-clean" data-clip="cafe" data-track="clean">Clean</button></div></div>
-      </div>
-    </div>
-    <p class="credit">Audio: Valentini-Botinhao, <i>Noisy speech database</i>, Univ. of Edinburgh, CC BY 4.0; noise from DEMAND (Thiemann, Ito, Vincent), CC BY-SA 3.0. Played here at 16 kHz.</p>
-    <aside class="notes">Explain why paired data matters: we can subtract to see the noise and we can score against the clean reference. Stress the split: 400 pairs to tune, 240 held out, and the three clips on these slides belong to neither set. Play one noisy/clean pair (the bus one is the clearest).</aside>
-  </section>
-
-  <!-- 4 · Finding 1 -->
-  <section class="slide" data-section="What the data shows">
-    <p class="kicker">03 · What we've found so far</p>
-    <h2>Speech and noise share the low frequencies</h2>
-    <figure class="fig"><img src="assets/figures/progress/spectral-overlap.png" alt="Power spectral density of clean reference, noisy mixture, and residual for bus, office, and café clips; residual power is concentrated below 300 Hz, where clean speech also has substantial power."></figure>
-    <div class="callouts">
-      <div><b>98% · 99% · 76%</b><span>of the noise power is below 300 Hz<br>(bus · office · café)</span></div>
-      <div><b>25% · 32% · 23%</b><span>of the <em>clean speech</em> power<br>is in that same band</span></div>
-      <div class="so"><span>A high-pass filter removes low-frequency noise and part of the voice with it. The café noise also spreads across the whole speech band.</span></div>
-    </div>
-    <aside class="notes">Red is the noise (residual y − s), blue is clean speech. The shaded band is below 300 Hz. Nearly all bus and office noise sits there, but a quarter to a third of the speech power does too. Café is different: the noise follows the speech spectrum, so no fixed filter can separate them.</aside>
-  </section>
-
-  <!-- 5 · Finding 2 -->
-  <section class="slide" data-section="What the data shows">
-    <p class="kicker">03 · What we've found so far</p>
-    <h2>The background does not hold still</h2>
-    <figure class="fig"><img src="assets/figures/progress/noise-floor-variation.png" alt="Residual band power over time in three frequency bands for bus, office, and café clips, varying by several decibels within each recording."></figure>
-    <div class="callouts">
-      <div><b>11.5 dB</b><span>swing in 300–1,000 Hz noise<br>within one bus clip</span></div>
-      <div><b>10.2 dB</b><span>swing in 1–4 kHz noise<br>within one café clip</span></div>
-      <div class="so"><span>A single noise estimate for the whole recording can be wrong later in the utterance. That is our reason to test an estimate that updates during pauses.</span></div>
-    </div>
-    <aside class="notes">Each line is the noise power in one band over time, inside a single 3-second recording. The swings are the 10th-to-90th percentile range. Takeaway: a noise estimate has a time scale. This motivates the fixed versus pause-updated comparison on the next slides.</aside>
-  </section>
-
-  <!-- 6 · Methods -->
-  <section class="slide" data-section="Methods">
-    <p class="kicker">04 · What we've built</p>
-    <h2>Three denoisers, one interface, noisy input only</h2>
-    <div class="methods">
-      <article>
-        <span class="tag">Baseline</span>
-        <h3>FIR filter</h3>
-        <p class="eq">ŝ[n] = (h ∗ y)[n]</p>
-        <p>Order-128 Hamming-window filter. One fixed frequency response for the whole recording. Delay is compensated so outputs stay sample-aligned.</p>
-        <p class="knob"><b>Frozen after tuning</b>100–7,000 Hz band-pass</p>
-      </article>
-      <article>
-        <span class="tag">Time–frequency</span>
-        <h3>Spectral subtraction</h3>
-        <p class="eq">|Ŝ|² = max(|Y|² − α·N, β·N)</p>
-        <p>Subtract an estimated noise power <i>N</i> from every STFT frame, keep a floor <i>β</i>, and reuse the noisy phase. <i>α</i> sets how hard we subtract.</p>
-        <p class="knob"><b>Frozen after tuning</b>α = 1, β = 0.01, noise from quietest 10% of frames</p>
-      </article>
-      <article>
-        <span class="tag">Time–frequency</span>
-        <h3>Wiener gain</h3>
-        <p class="eq">G = max(G<sub>min</sub>, Ŝ² ⁄ (Ŝ² + N))</p>
-        <p>Scale each time–frequency bin by its estimated share of speech power. A gain floor limits how far any bin can be turned down.</p>
-        <p class="knob"><b>Frozen after tuning</b>G<sub>min</sub> = 0.05, noise from quietest 10% of frames</p>
-      </article>
-    </div>
-    <div class="shared">
-      <span><b>STFT</b> 25 ms Hann · 10 ms hop · 512-point FFT · 16 kHz</span>
-      <span><b>Noise estimate N</b> average of the lowest-energy noisy frames</span>
-      <span><b>Checked by unit tests</b> reconstruction · FIR alignment · silence · synthetic noise</span>
-    </div>
-    <aside class="notes">All three share one MATLAB function, denoise_speech, and only ever see y. FIR is the simple baseline: one frequency response. The two spectral methods compute a different gain for every 10 ms frame and every frequency bin. The bottom row of each card is the setting we froze after tuning on the 400 training pairs (next slides).</aside>
-  </section>
-
-  <!-- 7 · Noise tracking -->
-  <section class="slide" data-section="Methods">
-    <p class="kicker">04 · What we've built</p>
-    <h2>Letting the noise estimate follow the background</h2>
-    <div class="cols cols-track">
-      <ol class="steps">
-        <li><b>Start</b><span>Average the lowest-energy 20% of noisy frames. Their largest energy is <i>E</i><sub>20</sub>.</span></li>
-        <li><b>Find candidate pauses</b><span>A frame qualifies if its energy is within 3 dB of <i>E</i><sub>20</sub>.</span></li>
-        <li><b>Wait for confirmation</b><span>Update only from the third consecutive qualifying frame on.</span></li>
-        <li><b>Update, otherwise hold</b><span class="eq eq-inline">N ← λ·N + (1 − λ)·|Y|², &nbsp;λ = 0.9</span></li>
-      </ol>
-      <div class="compare">
-        <div class="compare-card"><h3>Fixed estimate</h3><p>One noise spectrum for the whole recording. Simple, but blind to the 10 dB swings we measured.</p></div>
-        <div class="compare-card is-accent"><h3>Pause-updated estimate</h3><p>Same starting spectrum, same gains. Only the update policy differs, so the comparison isolates it.</p></div>
-        <p class="caveat"><b>Known risk</b> Quiet speech can pass the energy test and leak into the noise estimate. The detector sees only the noisy signal, so it cannot prove a frame is speech-free. If the recording has too little energy contrast, updates are switched off.</p>
-      </div>
-    </div>
-    <aside class="notes">Walk through the four steps. Stress the experimental design: fixed and updated variants share everything except the update rule. Be upfront about the risk: an energy threshold is not a real voice-activity detector. The demo on the next slide shows exactly which frames get used.</aside>
-  </section>
-
-  <!-- 8 · Tuning -->
-  <section class="slide" data-section="Results so far">
-    <p class="kicker">05 · Tuning on 400 training pairs</p>
-    <h2>Removing more noise did not make speech more intelligible</h2>
-    <div class="cols cols-tune">
-      <figure class="tune-chart" id="tuneChart" aria-label="Scatter plot of 41 tuning candidates: mean SNR change against mean STOI change"></figure>
-      <div class="tune-side">
-        <div class="tune-stat"><b>41 × 400</b><span>candidate settings × training pairs = 16,400 scored outputs. No held-out audio used.</span></div>
-        <ul class="tune-points">
-          <li><b>The trade-off is real.</b> Spectral subtraction at α = 4 raises SNR by 3.6 dB over the noisy input but lowers STOI by 0.011.</li>
-          <li><b>The best STOI gain is tiny:</b> +0.0002 over the noisy input. Classic filters mostly trade noise for distortion.</li>
-          <li><b>Pause updates scored below</b> fixed noise estimates on this training set.</li>
-          <li><b>Cutting at 300 Hz removes speech:</b> SNR drops 2 dB and STOI by 0.014.</li>
+        <ul class="bl">
+          <li><b>Source:</b> public dataset from the University of Edinburgh; speech from the Voice Bank corpus, noise recorded with the DEMAND set</li>
+          <li><b>Type:</b> paired recordings, the same sentence clean and with noise added; mono, resampled 48 → 16 kHz</li>
+          <li><b>Why paired:</b> the clean version lets us score every method and build training targets</li>
         </ul>
       </div>
+      <table class="plain-table data-table">
+        <thead><tr><th></th><th>Training</th><th>Test</th></tr></thead>
+        <tbody>
+          <tr><td>Pairs</td><td>11,572</td><td>824</td></tr>
+          <tr><td>Speakers</td><td>28</td><td>2 (new)</td></tr>
+          <tr><td>Noise types</td><td>10</td><td>5 (new)</td></tr>
+          <tr><td>SNR (dB)</td><td>0, 5, 10, 15</td><td>2.5 – 17.5</td></tr>
+        </tbody>
+      </table>
     </div>
-    <p class="credit">Each point: mean over 400 training pairs. STOI = classic short-time objective intelligibility (pystoi 0.4.1). Selection rule: highest mean STOI, then ΔSNR. Source: <code>reports/tuning_summary.csv</code>.</p>
-    <aside class="notes">This is our first real result. Each dot is one parameter setting, averaged over all 400 training pairs. Right means more noise removed (higher SNR); up means more intelligible. The cloud slopes down: the harder a method suppresses, the higher the SNR and the lower the STOI. That is exactly the trade-off in our title, now measured. The ringed dots are the settings we froze: the gentlest ones. Their STOI gain over doing nothing is about 0.0002, so on training data none of these classic filters meaningfully improves intelligibility. Pause updating also did not help here. These are training numbers; the held-out evaluation comes next.</aside>
+    <div>
+      <p class="label-sm">Test noise types (noise only)</p>
+      <div class="noise-strip"><figure><img src="assets/figures/slides/test_noise_bus.png" alt="Bus noise spectrogram"><figcaption>Bus</figcaption></figure><figure><img src="assets/figures/slides/test_noise_cafe.png" alt="Café noise spectrogram"><figcaption>Café</figcaption></figure><figure><img src="assets/figures/slides/test_noise_living.png" alt="Living room noise spectrogram"><figcaption>Living room</figcaption></figure><figure><img src="assets/figures/slides/test_noise_office.png" alt="Office noise spectrogram"><figcaption>Office</figcaption></figure><figure><img src="assets/figures/slides/test_noise_psquare.png" alt="Public square noise spectrogram"><figcaption>Public square</figcaption></figure></div>
+    </div>
+    </div>
+    <p class="ref">C. Valentini-Botinhao, Noisy speech database for training speech enhancement algorithms and TTS models, University of Edinburgh, 2017.</p>
+    <aside class="notes">~45 s. We use VoiceBank–DEMAND, a public dataset from the University of Edinburgh: clean sentences from the Voice Bank corpus mixed with real noise recordings. Every noisy file has its clean version, so we can measure how much of the voice each method keeps, and use the clean speech as a training target. The test set has two speakers and five noise types that never appear in training, at SNRs from 2.5 to 17.5 dB. The strip shows the five test noises: bus and office are mostly low-frequency, café and public square contain other voices and sudden sounds.</aside>
   </section>
 
-  <!-- 9 · Demo -->
-  <section class="slide slide-demo" id="demo" data-section="Demo">
-    <div class="demo-head">
-      <div><p class="kicker">06 · Live demo</p><h2>Hear the trade-off</h2></div>
-      <p class="demo-hint">Click a spectrogram to play from that point · <kbd>1</kbd> noisy <kbd>2</kbd> output <kbd>3</kbd> clean · <kbd>Space</kbd> play / stop</p>
-    </div>
-    <div class="demo">
-      <div class="controls">
-        <div class="field"><label>Recording</label>
-          <div class="seg" id="segClip"><button data-v="bus">Bus</button><button data-v="office">Office</button><button data-v="cafe">Café</button></div></div>
-        <div class="field"><label>Method</label>
-          <div class="seg seg-stack" id="segMethod"><button data-v="identity">Unprocessed</button><button data-v="fir">FIR filter</button><button data-v="spectral_subtraction">Spectral subtraction</button><button data-v="wiener">Wiener gain</button></div></div>
-        <div id="params" class="params"></div>
-        <div class="metrics">
-          <div><span>SNR in</span><b id="mIn">–</b></div>
-          <div><span>SNR out</span><b id="mOut">–</b></div>
-          <div class="delta"><span>Change</span><b id="mDelta">–</b></div>
-        </div>
-        <p class="fine">SNR against the clean reference on one exploratory clip. Defaults are the frozen training-set settings. A diagnostic, not an evaluation result.</p>
-      </div>
-      <div class="plots" id="plots">
-        <div class="plot-row" data-track="noisy"><button class="track"><i></i>Noisy input</button><div class="plot"><canvas width="1720" height="236"></canvas><span class="hz hz-top">8 kHz</span><span class="hz hz-bot">0</span></div></div>
-        <div class="plot-row" data-track="output"><button class="track"><i></i><span id="outLabel">Output</span></button><div class="plot"><canvas width="1720" height="236"></canvas><span class="hz hz-top">8 kHz</span><span class="hz hz-bot">0</span>
-          <div class="view" id="segView"><button data-v="output">Spectrogram</button><button data-v="gain">Gain applied</button></div></div></div>
-        <div class="plot-row" data-track="clean"><button class="track"><i></i>Clean reference</button><div class="plot"><canvas width="1720" height="236"></canvas><span class="hz hz-top">8 kHz</span><span class="hz hz-bot">0</span></div></div>
-        <div class="plot-row plot-row-strip"><div class="strip-label"><b>Noise estimate</b><span id="trackNote"></span></div><div class="plot plot-strip"><canvas id="strip" width="1720" height="150"></canvas></div></div>
-        <div class="playhead" id="playhead"></div>
-      </div>
-    </div>
-    <p class="credit">Runs in the browser: a JavaScript port of <code>code/denoise_speech.m</code> with the same windows, hop, and FFT size. Double-click a slider to return it to the frozen value.</p>
-    <aside class="notes">Every method opens at its frozen setting. Suggested path (about 2 minutes): 1) Bus, play Noisy then Clean. 2) FIR: rumble gone; slide the cutoff up to ~800 Hz and the voice gets thin. 3) Spectral subtraction, raise alpha to 3–4: more noise removed, listen for the watery tones; switch to "Gain applied" to show the time-varying mask. 4) Café + FIR: barely helps because the noise overlaps speech. 5) Wiener, toggle Fixed vs Pause-updated and point at the orange frames where the estimate is updated.</aside>
-  </section>
-
-  <!-- 9 · Status -->
+  <!-- 4 · FIR -->
   <section class="slide" data-section="Progress">
-    <p class="kicker">07 · Where we are</p>
-    <h2>Settings are frozen; the held-out test is next</h2>
-    <div class="cols cols-status">
-      <div>
-        <p class="label">Done</p>
-        <ul class="check">
-          <li><b>Reproducible data setup.</b> One script fetches and CRC-checks the 643 selected pairs; MATLAB validates sample rate, length, and resampling.</li>
-          <li><b>Frozen splits.</b> 400 tuning and 240 held-out pairs, balanced by condition and speaker, committed as manifests.</li>
-          <li><b>Three denoisers + pause-updated noise tracking</b>, unit-tested, behind one interface.</li>
-          <li><b>Training-only tuning, then freeze.</b> 41 predeclared candidates scored on all 400 tuning pairs; winners and provenance recorded.</li>
-        </ul>
-      </div>
-      <div>
-        <p class="label">Keeping the comparison fair</p>
-        <ul class="rules">
-          <li><b>Same samples for every method</b><span>Every output and baseline is scored on samples 65 through N − 64; no extra shifting, gain fitting, or normalization.</span></li>
-          <li><b>Same loudness when listening</b><span>One export gain per utterance, never per-method normalization.</span></li>
-          <li><b>One pinned metric</b><span>Classic STOI (intelligibility estimate) from the same implementation on every machine; SNR change as a secondary measure.</span></li>
-          <li><b>No peeking</b><span>Tuning never loaded held-out audio. Frozen settings are hash-checked before they are applied.</span></li>
-        </ul>
-      </div>
+    <header class="shead"><h2>Method 1: FIR Band-pass Filter</h2><nav class="crumb"><span>Project</span><span>Data</span><span class="on">Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="blockdiag">
+      <div class="sig"><span class="m">y[n]</span><small>noisy</small></div><i>→</i>
+      <div class="blk"><b>h[n]</b><small>band-pass, 50–7,000 Hz, order 512</small></div><i>→</i>
+      <div class="sig"><span class="m">ŝ[n] = (h ∗ y)[n]</span><small>filtered</small></div>
     </div>
-    <aside class="notes">Status: data, methods, and tuning are done; settings are frozen. We deliberately have not touched the 240 held-out pairs yet. The right column is what makes the final numbers trustworthy: same samples, same metric, no peeking.</aside>
+    <div class="two">
+      <figure class="chartfig"><img src="assets/figures/slides/fir_response.svg" alt="FIR magnitude response"><figcaption>Keeps the ITU-T G.722 wideband speech band</figcaption></figure>
+      <figure class="chartfig"><img src="assets/figures/slides/fir_limit_cafe.svg" alt="Café average spectrum"><figcaption><b>Café:</b> after FIR, noise stays far above the clean speech</figcaption></figure>
+    </div>
+    <p class="takeaway">Works for low-frequency rumble (bus, office), but cannot remove noise <b>inside</b> the speech band → we need a gain that changes over time and frequency.</p>
+    </div>
+    <aside class="notes">~50 s. The simplest idea: keep the frequencies where speech is and cut the rest. We convolve with a linear-phase FIR band-pass filter, 50 to 7,000 Hz, the standard wideband speech band from ITU-T G.722, so nothing is tuned on our data; order 512 is needed for a sharp 50 Hz edge, and the 16 ms delay is compensated. It removes low-frequency rumble such as bus and office noise. But on the right, for café noise the filtered spectrum (navy) stays far above the clean speech (dashed) from 1 to 7 kHz: the noise is inside the speech band, and cutting it would cut the voice.</aside>
   </section>
 
-  <!-- 10 · Plan -->
-  <section class="slide" data-section="Plan">
-    <p class="kicker">08 · What's left</p>
-    <h2>One evaluation, then the write-up</h2>
-    <div class="timeline">
-      <article class="is-done"><span class="when">Done</span><h3>Implement and verify</h3><p>Unprocessed reference, FIR, spectral subtraction, Wiener, and pause-updated noise tracking, verified on exploratory clips.</p></article>
-      <article class="is-done"><span class="when">Done</span><h3>Tune, then freeze</h3><p>41 candidates on the <b>400 tuning pairs</b>, chosen by mean STOI, then SNR change. Settings frozen and hash-checked.</p></article>
-      <article><span class="when">Next</span><h3>Evaluate once</h3><p>Run the frozen settings on the <b>240 held-out pairs</b>. Report by noise type, SNR, and speaker; fixed versus pause-updated side by side.</p></article>
-      <article><span class="when">Final report</span><h3>Listen and document</h3><p>Listening review of the matched-level exports, and where stronger suppression starts to damage speech.</p></article>
+  <!-- 6 · Wiener principle -->
+  <section class="slide" data-section="Progress">
+    <header class="shead"><h2>Method 2: Wiener Filter</h2><nav class="crumb"><span>Project</span><span>Data</span><span class="on">Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="eqrow eqrow-sm">
+      <figure><img src="assets/figures/slides/wiener_in.png" alt="Noisy spectrogram"><figcaption>Noisy STFT <span class="m">|Y(k,m)|</span></figcaption></figure>
+      <span class="op">×</span>
+      <figure><img class="maskimg" src="assets/figures/slides/wiener_gain.png" alt="Gain mask"><figcaption>Gain <span class="m">G(k,m)</span> (dark = keep)</figcaption></figure>
+      <span class="op">=</span>
+      <figure><img src="assets/figures/slides/wiener_out.png" alt="Enhanced spectrogram"><figcaption>Enhanced <span class="m">|Ŝ(k,m)|</span></figcaption></figure>
     </div>
-    <p class="stretch"><b>If time permits</b> LMS / NLMS adaptive filtering on a controlled mixture with a separate noise reference. It needs a second input our dataset does not provide, so it would be reported separately.</p>
-    <aside class="notes">Two steps are done. What remains: run the frozen settings once on the 240 held-out pairs, then listen and write up. The open question: does the training-set picture (tiny STOI change, pause updates not helping) hold on unseen bus, office, and café recordings? Mention LMS/NLMS as a stretch goal only.</aside>
+    <div class="two two-wiener">
+      <div>
+        <p class="formula"><span class="m">G = ξ / (1 + ξ)</span></p>
+        <ul class="bl">
+          <li><span class="m">ξ</span>: estimated speech-to-noise ratio of each bin</li>
+          <li>Estimated from the noisy signal with smoothing α</li>
+          <li>Each 10 ms frame and each frequency gets its own gain</li>
+        </ul>
+      </div>
+      <figure class="chartfig"><img src="assets/figures/slides/wiener_gain_curve.svg" alt="Wiener gain curve"></figure>
+    </div>
+    </div>
+    <aside class="notes">~45 s. The Wiener filter works on the spectrogram. For every time–frequency bin it estimates the speech-to-noise ratio ξ and multiplies the bin by G = ξ/(1+ξ): close to 1 where speech dominates, close to 0 where noise dominates. The middle picture is the actual gain for our bus clip; dark is kept. Unlike FIR, it changes over time and frequency.</aside>
   </section>
 
-  <!-- 11 · Close -->
-  <section class="slide slide-close" data-section="Wrap-up">
-    <p class="kicker">Takeaway</p>
-    <h2>A noise estimate has a time scale</h2>
-    <p class="big">A whole-recording spectrum tells us <em>where</em> the noise sits. Short-time analysis also tells us <em>when</em> it changes, and that is what a time–frequency filter can act on.</p>
-    <div class="close-grid">
-      <div><b>What we'll be able to say</b><span>For bus, office, and café noise: how much each method improves intelligibility, and what it costs the voice.</span></div>
-      <div><b>What surprised us</b><span>On training data, extra suppression raised SNR but not intelligibility, and pause updates did not beat a fixed estimate.</span></div>
+  <!-- 7 · Wiener alpha problem -->
+  <section class="slide" data-section="Progress">
+    <header class="shead"><h2>Wiener Filter: the Smoothing Parameter α</h2><nav class="crumb"><span>Project</span><span>Data</span><span class="on">Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <p class="m-block">ξ(k,m) = α · |Ŝ(k,m−1)|² / N(k) + (1 − α) · max(|Y(k,m)|² / N(k) − 1, 0)</p>
+    <div class="two two-alpha">
+      <figure class="chartfig"><img src="assets/figures/slides/alpha_tradeoff.svg" alt="Speech-to-noise ratio over time for two alpha values"><figcaption>One frequency bin of the bus clip</figcaption></figure>
+      <figure class="chartfig"><img src="assets/figures/slides/best_alpha.svg" alt="Best alpha per noise type"><figcaption>The best α depends on the noise type</figcaption></figure>
     </div>
-    <p class="thanks">Thank you. Questions?</p>
-    <p class="links">eecs351-speech-denoising-team.github.io/eecs351-speech-denoising-website</p>
-    <aside class="notes">Close with the one idea to remember, then invite questions. If asked "which method is best": on training data the differences in STOI are tiny; the held-out evaluation decides, per noise type.</aside>
+    <p class="takeaway">One fixed α cannot be both fast at word onsets and smooth in pauses.</p>
+    </div>
+    <p class="ref">Decision-directed estimate: Y. Ephraim and D. Malah, IEEE Trans. ASSP, 1984; P. Scalart and J. Vieira Filho, ICASSP, 1996.</p>
+    <aside class="notes">~45 s. ξ is estimated recursively: α weights the previous frame's estimate against the current observation. Left: the true ξ (grey) and two estimates. With α = 0.5, the estimate jumps up in pauses, which sounds like musical noise; with α = 0.98 (the textbook value) it is smooth but reacts late when a word starts. Across our three clips, α = 0.98 underestimates ξ by 7–9 dB more at word onsets, and α = 0.5 flags 4–20% of pause bins as speech. Right: when we tuned α on 400 training pairs, the best value changed with the noise type.</aside>
+  </section>
+
+  <!-- 8 · Our method -->
+  <section class="slide" data-section="Progress">
+    <header class="shead"><h2>Method 3 (Ours): Learned α</h2><nav class="crumb"><span>Project</span><span>Data</span><span class="on">Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="arch">
+      <div class="sig">Noisy<br>spectrogram</div><i>→</i>
+      <div class="blk is-ours"><b>GRU network</b><small>2 layers · 128 units · 0.3 M params</small></div><i>→</i>
+      <div class="sig"><span class="m">α(k, m)</span><small>for every bin</small></div><i>→</i>
+      <div class="blk"><b>Wiener filter</b><small>same as before</small></div><i>→</i>
+      <div class="sig">Enhanced<br>speech</div>
+    </div>
+    <div class="two two-ours">
+      <div class="stack">
+        <figure><img src="assets/figures/slides/learned_clean.png" alt="Clean speech spectrogram"><figcaption>Speech (café clip)</figcaption></figure>
+        <figure><img class="maskimg" src="assets/figures/slides/learned_alpha.png" alt="Learned alpha map"><figcaption>Learned α: dark ≈ 1 in pauses, light ≈ 0.7 at word onsets</figcaption></figure>
+      </div>
+      <ul class="bl">
+        <li>Replaces the fixed α with α chosen per bin</li>
+        <li>Trained on 10,802 clean / noisy pairs</li>
+        <li>Target: ideal Wiener gain; loss goes back through the ξ recursion</li>
+        <li>Starts at α = 0.98, i.e. the textbook filter</li>
+      </ul>
+    </div>
+    </div>
+    <aside class="notes">~50 s. We keep the whole Wiener filter and only let a small recurrent network choose α for every frequency and frame. Training target is the ideal Wiener gain from clean/noisy pairs; the error flows back through the recursion to the network. It starts at 0.98 everywhere. The lower picture shows what it learned, aligned with the speech above: α near 1 in pauses, smaller where words start, exactly what a fixed α could not do. Related: Deep Xi and RNNoise also combine small networks with classic filters.</aside>
+  </section>
+
+  <!-- 10 · Audio -->
+  <section class="slide" data-section="Progress">
+    <header class="shead"><h2>Results: Audio Example</h2><nav class="crumb"><span>Project</span><span>Data</span><span class="on">Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <p class="clip-name">Office noise, 2.5 dB SNR</p>
+    <div class="audio-stack"><div class="astrip"><span class="alabel">Noisy</span><button class="aplay thumb" data-src="assets/audio/results/office_noisy.wav" aria-label="Play office, Noisy"><img src="assets/figures/results-v2/office_noisy.png" alt=""><span class="pbtn">▶</span></button></div><div class="astrip"><span class="alabel">FIR</span><button class="aplay thumb" data-src="assets/audio/results/office_fir.wav" aria-label="Play office, FIR"><img src="assets/figures/results-v2/office_fir.png" alt=""><span class="pbtn">▶</span></button></div><div class="astrip"><span class="alabel">Wiener α = 0.98</span><button class="aplay thumb" data-src="assets/audio/results/office_dd098.wav" aria-label="Play office, Wiener α = 0.98"><img src="assets/figures/results-v2/office_dd098.png" alt=""><span class="pbtn">▶</span></button></div><div class="astrip is-ours"><span class="alabel">Ours</span><button class="aplay thumb is-ours" data-src="assets/audio/results/office_learned.wav" aria-label="Play office, Ours"><img src="assets/figures/results-v2/office_learned.png" alt=""><span class="pbtn">▶</span></button></div><div class="astrip"><span class="alabel">Clean</span><button class="aplay thumb" data-src="assets/audio/results/office_clean.wav" aria-label="Play office, Clean"><img src="assets/figures/results-v2/office_clean.png" alt=""><span class="pbtn">▶</span></button></div></div>
+    </div>
+    <aside class="notes">~45 s. One office recording at 2.5 dB SNR, the noisiest condition; click each spectrogram to play. Suggested order: noisy, Wiener α = 0.98 (cleaner but word beginnings sound cut), ours, clean. All versions share one playback level. If asked about scores: on this clip FIR has a higher PESQ than ours (1.88 vs 1.67), because office noise is almost all very low frequency, the case where a fixed filter works; averaged over all 824 test recordings, ours is best (next slide).</aside>
+  </section>
+
+  <!-- 11 · Scores -->
+  <section class="slide" data-section="Progress">
+    <header class="shead"><h2>Results: 824 Test Recordings</h2><nav class="crumb"><span>Project</span><span>Data</span><span class="on">Progress</span><span>Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="two">
+      <figure class="chartfig"><img src="assets/figures/slides/results_pesq.svg" alt="PESQ by method"></figure>
+      <figure class="chartfig"><img src="assets/figures/slides/results_stoi.svg" alt="STOI by method"></figure>
+    </div>
+    <p class="takeaway">Fixed-α Wiener filters trade intelligibility for quality. The learned α improves quality <b>and</b> keeps intelligibility; the gain is largest in the noisiest recordings (2.5 dB SNR).</p>
+    </div>
+    <p class="ref">Mean over 824 test pairs. Each method uses one setting chosen on training data. Dashed line: STOI of the noisy input.</p>
+    <aside class="notes">~40 s. PESQ goes up at each step, from 1.97 for the noisy input to 2.28 for ours. But both fixed-α Wiener filters fall below the dashed line on STOI: they remove noise but damage some words. Only the learned α is above it. Against α = 0.98: PESQ +0.12, better STOI on 94% of files. Against α = 0.9 the PESQ gain is small (+0.03).</aside>
+  </section>
+
+  <!-- 10 · Limitations and next steps -->
+  <section class="slide" data-section="Next Steps">
+    <header class="shead"><h2>Limitations and Next Steps</h2><nav class="crumb"><span>Project</span><span>Data</span><span>Progress</span><span class="on">Next Steps</span></nav></header>
+    <div class="sbody">
+    <div class="two two-limit">
+      <figure class="chartfig"><img src="assets/figures/slides/noise_types.svg" alt="Noise removed in speech pauses by noise type"><figcaption>Noise removed in speech pauses, by noise type (our method)</figcaption></figure>
+      <div>
+        <p class="sub sub-top">Limitation</p>
+        <ul class="bl">
+          <li>Background talkers (babble, meeting) are hardly removed: energy-based methods cannot tell the target voice from other voices</li>
+        </ul>
+        <p class="sub">Next steps</p>
+        <ul class="bl">
+          <li><b>Learn the noise estimate</b> so it follows changing noise</li>
+          <li><b>Handle background speech</b></li>
+          <li>Finish the website report (due Dec 13)</li>
+        </ul>
+      </div>
+    </div>
+    <p class="thanks-plain">Thank you! Questions?</p>
+    </div>
+    <aside class="notes">~40 s. Steady noise is removed well (24–27 dB in pauses), changing noise less (9–17 dB), and background talkers hardly at all (6–8 dB): any method that decides by energy cannot separate the target voice from other voices. Next: learn the noise estimate so it follows changing noise (a minimum-statistics tracker already made pauses 3–7 dB cleaner, but needs retraining), handle background speech, and finish the website report for Dec 13.</aside>
   </section>
 
   <footer class="chrome">
-    <a href="index.html" class="home" title="Back to project site">EECS 351 · Speech Denoising</a>
-    <span id="sectionLabel" class="section"></span>
+    <a href="index.html" class="home" title="Back to project site">EECS 351 Group 11</a>
+    <span id="sectionLabel" class="section" hidden></span>
     <div class="chrome-right">
-      <button id="timer" class="timer" title="Start / pause the 10-minute timer (T). Shift-click to reset.">10:00</button>
+      <button id="timer" class="timer" title="Start / pause the 7-minute timer (T). Shift-click to reset.">7:00</button>
       <button id="prev" aria-label="Previous slide">‹</button>
       <span id="counter" class="counter">1 / 12</span>
       <button id="next" aria-label="Next slide">›</button>
